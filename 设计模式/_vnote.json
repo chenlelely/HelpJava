@@ -1,0 +1,48 @@
+{
+    "created_time": "2019-11-05T06:46:44Z",
+    "files": [
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-11-04T11:57:18Z",
+            "modified_time": "2019-11-05T01:20:59Z",
+            "name": "设计模式之Factory三种工厂模式.md",
+            "tags": [
+            ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-11-05T01:58:54Z",
+            "modified_time": "2019-11-05T03:13:07Z",
+            "name": "设计模式之Builder建造者模式.md",
+            "tags": [
+            ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-11-05T06:03:35Z",
+            "modified_time": "2019-11-05T06:46:23Z",
+            "name": "设计模式之Prototype原型模式.md",
+            "tags": [
+            ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-11-05T06:48:35Z",
+            "modified_time": "2019-11-05T13:00:16Z",
+            "name": "设计模式之Decorator装饰者模式.md",
+            "tags": [
+            ]
+        }
+    ],
+    "sub_directories": [
+    ],
+    "version": "1"
+}
