@@ -1,75 +1,66 @@
 # Spring源码深度分析
 # 1.bean和beanDefinition
+BeanDefinition 就是我们所说的 Spring 的 Bean，我们自己定义的各个 Bean 其实会转换成一个个 BeanDefinition 存在于 Spring 的 BeanFactory 中。
 BeanDefinition与Bean的关系, 就好比类与对象的关系. 类在spring的数据结构就是BeanDefinition.根据BeanDefinition得到的对象就是我们需要的Bean.
+所以，如果有人问你 Bean 是什么的时候，你要知道 `Bean 在代码层面上可以认为是 BeanDefinition 的实例`。
+>BeanDefinition 中保存了我们的 Bean 信息，比如这个 Bean 指向的是哪个类、是否是单例的、是否懒加载、这个 Bean 依赖了哪些 Bean 等等。
 ## BeanDefinition
 BeanDefinition是bean在spring中的描述，有了BeanDefinition我们就可以创建Bean,BeanDefinition是Bean在spring中的定义形态
 接下来我们看看BeanDefinition的相关接口与类.
 - **定义**：BeanDefinition接口顶级基础接口,用来描述Bean,里面存放Bean元数据，比如Bean类名、scope、属性、构造函数参数列表、依赖的bean、是否是单例类、是否是懒加载等一些列信息。
 ```java
 public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
+     // 默认只提供 sington 和 prototype 两种，
+    // 还有 request, session, globalSession, application, websocket 这几种，不过，它们属于基于 web 的扩展。
     String SCOPE_SINGLETON = "singleton";
     String SCOPE_PROTOTYPE = "prototype";
     int ROLE_APPLICATION = 0;
     int ROLE_SUPPORT = 1;
     int ROLE_INFRASTRUCTURE = 2;
-
+    // 设置父 Bean，这里涉及到 bean 继承，不是 java 继承。
+    // 一句话就是：继承父 Bean 的配置信息而已
     void setParentName(String var1);
-
     String getParentName();
-
+    // 设置 Bean 的类名称，将来是要通过反射来生成实例的
     void setBeanClassName(String var1);
-
+    // 获取 Bean 的类名称
     String getBeanClassName();
-
+    // 设置 bean 的 scope
     void setScope(String var1);
-
     String getScope();
-
     void setLazyInit(boolean var1);
-
     boolean isLazyInit();
-
+    // 设置该 Bean 依赖的所有的 Bean，注意，这里的依赖不是指属性依赖(如 @Autowire 标记的)，
+    // 是 depends-on="" 属性设置的值。
     void setDependsOn(String... var1);
-
+    // 返回该 Bean 的所有依赖
     String[] getDependsOn();
-
+    // 设置该 Bean 是否可以注入到其他 Bean 中，只对根据类型注入有效，
+    // 如果根据名称注入，即使这边设置了 false，也是可以的
     void setAutowireCandidate(boolean var1);
-
+    // 该 Bean 是否可以注入到其他 Bean 中
     boolean isAutowireCandidate();
-
+    // 主要的。同一接口的多个实现，如果不指定名字的话，Spring 会优先选择设置 primary 为 true 的 bean
     void setPrimary(boolean var1);
-
     boolean isPrimary();
-
+    // 如果该 Bean 采用工厂方法生成，指定工厂名称。对工厂不熟悉的读者，请参加附录
+    // 一句话就是：有些实例不是用反射生成的，而是用工厂模式生成的
     void setFactoryBeanName(String var1);
-
     String getFactoryBeanName();
-
     void setFactoryMethodName(String var1);
-
     String getFactoryMethodName();
-
     ConstructorArgumentValues getConstructorArgumentValues();
-
     MutablePropertyValues getPropertyValues();
-
     boolean isSingleton();
-
     boolean isPrototype();
-
     boolean isAbstract();
-
     int getRole();
-
     String getDescription();
-
     String getResourceDescription();
-
     BeanDefinition getOriginatingBeanDefinition();
 }
-
 ```
-![](_v_images/20191117101715125_10023.png)
+![](_v_images/20191119093206304_9632.png)
 BeanMetadataElement接口：BeanDefinition元数据，返回该Bean的来源
 AttributeAccessor接口：提供对BeanDefinition属性操作能力，
 
@@ -80,10 +71,10 @@ Bean是我们需要的对象，是我们从spring内得到的结果，也就是�
 # 2.容器的基本实现
 ### 1.DefaultlistableBeanFactory
  DefaultListableBeanFactmy 是整个 bean加载的核心部分，是 Spring 注册及加载 bean 的默认实现
- ![无标题](_v_images/20191115113338095_21237.png)
+![](_v_images/20191119093225215_5633.png)
  
 ### 2.XmlBeanDefinitionReader
-![](_v_images/20191116145958075_7798.png)
+![](_v_images/20191119093239873_20465.png)
 1. 通过继承向 AbstractBeanDefinitionReader 中的方法，来使用 ResourLoader 将资源文件路径转换为对应的 `Resource 文件`。
 2. 通过 DocumentLoader对 Resource 文件进行转换，将 Resource 文件转换为 `Document文件`。
 3. 通过实现接口 BeanDefinitionDocumentReader 的 DefaultBeanDefinitionDocumentReader 类`对 Document 进行解析`，并使用 BeanDefinitionParserDelegate `对 Element 进行解析`。
@@ -91,7 +82,7 @@ Bean是我们需要的对象，是我们从spring内得到的结果，也就是�
 **`BeanFactory bf= new XmlBeanFactory (new ClassPathResource ("beanFactoryTest.xml"));`**
 `XmlBeanFactory是DefaultListableBeanFactory的子类`
 -  XmlBeanFactory初始化时序图
-![](_v_images/20191116150556876_22485.png)
+![](_v_images/20191119093339863_3290.png)
 ### 配置文件的封装
 Spring 的配置文件读取是通过 ClassPathResource 进行封装的，如` new ClassPathResource(”beanFactory Test.xml＂)`
 >在 Java 中，`将不同来源的资源抽象成 URL` ，通过注册不同的 handler ( URLStreamHandler )来处理不同来源的资源的读取逻辑，一般 handler 的类型使用不同前缀（协议， Protocol ）来识别，如"file：”“http：” “jar：”等，然而 URL 没有默认定义相对 Classpath 或 ServletContext 等资源的 handler ， `Spring 对其内部使用到的资源实现了自己的抽象结构 ： Resource 接口封装底层资源 `。
@@ -114,8 +105,7 @@ public interface Resource extends InputStreamSource (
 ```
 InputStreamSource 封装任何能返回 InputStream 的类
 Resource 接口抽象了所有 Spring 内部使用到的底层资源： File 、 URL 、 Classpath 等
-对不同来源的资源文件都有相应的 Resource 实现 ：文件（ FileSystemResource ） 、 Classpath资源（ ClassPathResource ）、 URL 资源（ UrlResource ）、 InputStream 资源（ InputStreamResource ） 、
-Byte 数组（ ByteArrayResource ）等
+对不同来源的资源文件都有相应的 Resource 实现 ：文件（ FileSystemResource ） 、 Classpath资源（ ClassPathResource ）、 URL 资源（ UrlResource ）、 InputStream 资源（ InputStreamResource ） 、Byte 数组（ ByteArrayResource ）等
 ![](_v_images/20191116151854019_29957.png =800x)
 资源文件的加载也是经常用到的，可以直接使用 Spring 提供的类，如：`Resource resource=new ClassPathResource( "beanFactoryTest.xml ”);  InputStream inputStream=resource.getinputStream();`有了 Resource 接口便可以对所有资源文件进行统一处理.
 ClassPathResource 的实现方式便是通过 class 或者 classLoader 提供的底层方法进行调用
@@ -137,7 +127,7 @@ public XmlBeanFactory(Resource resource) throws BeansException (
     //调用内部构造函数，parentBeanFactory 为父类BeanFactory用于factory 合并，可以为空
 public XmlBeanFactory(Resource resource , BeanFactory parentBeanFactory) throws BeansException {
        super(parentBeanFactory);
-       //XmlBeanDefinitionReader 类型的 reader属性
+       //XmlBeanDefinitionReader 类型的 reader属性*********
        this.reader.loadBeanDefinitions(resource);
 }  
 ```
@@ -153,7 +143,7 @@ public XmlBeanFactory(Resource resource , BeanFactory parentBeanFactory) throws 
 doLoadBeanDefinitions三件事：**支撑着整个 Spring 容器部分的实现**
 **A获取对 XML 文件的验证模式 。
 B加载 XML 文件，并得到对应的 Document。
-C根据返回的 Document 注册 Bean 信息 。**
+C根据返回的 Document 注册 BeanDefinition 信息 。**
 
 ## 2.2获取 XML 的验证模式
 XML 文件的验证模式保证了 XML 文件的正确性，而比较常用的验证模式有两种： DTD 和 XSD 。
@@ -175,13 +165,13 @@ public int registerBeanDefinitions(Document doc, Resource resource) throws BeanD
         BeanDefinitionDocumentReader documentReader = this.createBeanDefinitionDocumentReader();
        //记录统计前 BeanDefinition 的加载个数
         int countBefore = this.getRegistry().getBeanDefinitionCount();
-        //加载注册bean
+        //加载注册bean*********
         documentReader.registerBeanDefinitions(doc, this.createReaderContext(resource));
         return this.getRegistry().getBeanDefinitionCount() - countBefore;
     }
 ```
 其中的参数 doc 是通过上一节 loadDocurnent 加载转换出来的 。 
-DefaultBeanDefinitionDocumentReader.java
+**DefaultBeanDefinitionDocumentReader.java**
 ```java
 public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
         this.readerContext = readerContext;
@@ -289,7 +279,7 @@ protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate d
 4. 最后发出 响应事件，通知相关的监昕器，这个 bean 已 经加载完成了 。
 
 #### 2.解析 BeanDefinition
-BeanDefinitionDelegate.java
+**BeanDefinitionDelegate.java**
 `BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);`主要工作包括如下内容 ：
 1. 提取元素中的 id 以 及 name 属性 。
 2. 进一步解析其他所有属性并统一封装至 GenericBeanDefinition 类型的实例中 。
@@ -298,10 +288,11 @@ BeanDefinitionDelegate.java
 
 **Spring 通过 BeanDefinition 将配置文件中的＜bean＞配置信息转换为容器 的内部表示，并将这些 BeanDefiniton 注册到 BeanDefinitonRegistry 中** 。 Spring 容器的 BeanDefinitionRegistry 就像是 Spring 配置信息的内存数据库，主要是以**map 的形式** 保存，后续操作直接从 BeanDefinitionRegistry 中读取配置信息 。
 #### 3.注册BeanDefinition
-`BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, this.getReaderContext().getRegistry());`
+**BeanDefinitionReaderUtils.**`registerBeanDefinition(bdHolder, this.getReaderContext().getRegistry());`
 ```java
 public static void registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry) throws BeanDefinitionStoreException {
         String beanName = definitionHolder.getBeanName();
+        //Map(beanName, BeanDefinition)
         registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
         String[] aliases = definitionHolder.getAliases();
         if (aliases != null) {

@@ -1,3 +1,4 @@
+vnote_backup_file_826537664 D:/Markdown/Spring/源码分析/Spring源码深度分析2--从容器中获取bean对象.md
 # Spring源码深度分析2--从容器中获取bean对象
 # 1 加载bean对象
 **`MessageService message = (MessageService) bf.getBean("messageService");`**
