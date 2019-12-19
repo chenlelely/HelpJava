@@ -72,7 +72,7 @@ Bean是我们需要的对象，是我们从spring内得到的结果，也就是�
 ### 1.DefaultlistableBeanFactory
  DefaultListableBeanFactmy 是整个 bean加载的核心部分，是 Spring 注册及加载 bean 的默认实现
 ![](_v_images/20191119093225215_5633.png)
- 
+
 ### 2.XmlBeanDefinitionReader
 ![](_v_images/20191119093239873_20465.png)
 1. 通过继承向 AbstractBeanDefinitionReader 中的方法，来使用 ResourLoader 将资源文件路径转换为对应的 `Resource 文件`。
@@ -106,9 +106,10 @@ public interface Resource extends InputStreamSource (
 InputStreamSource 封装任何能返回 InputStream 的类
 Resource 接口抽象了所有 Spring 内部使用到的底层资源： File 、 URL 、 Classpath 等
 对不同来源的资源文件都有相应的 Resource 实现 ：文件（ FileSystemResource ） 、 Classpath资源（ ClassPathResource ）、 URL 资源（ UrlResource ）、 InputStream 资源（ InputStreamResource ） 、Byte 数组（ ByteArrayResource ）等
-![](_v_images/20191116151854019_29957.png =800x)
+![](_v_images/20191116151854019_29957.png)
 资源文件的加载也是经常用到的，可以直接使用 Spring 提供的类，如：`Resource resource=new ClassPathResource( "beanFactoryTest.xml ”);  InputStream inputStream=resource.getinputStream();`有了 Resource 接口便可以对所有资源文件进行统一处理.
 ClassPathResource 的实现方式便是通过 class 或者 classLoader 提供的底层方法进行调用
+
 ```java
 if (this.clazz is != null ) {
         is = this.clazz.getResourceAsStream(this.path) ;
