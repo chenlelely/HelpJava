@@ -21,13 +21,15 @@ Java面试通关知识点汇总
 [并发编程的艺术-09Java线程池相关](https://gitee.com/beeDragon/HelpJava/blob/master/03.%E5%A4%9A%E7%BA%BF%E7%A8%8B/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E7%9A%84%E8%89%BA%E6%9C%AF-09Java%E7%BA%BF%E7%A8%8B%E6%B1%A0%E7%9B%B8%E5%85%B3.md)  
 []()  
 []()  
+
 ## JVM 
+ [01深入理解Java虚拟机のJVM内存区域与对象布局.md](04.JVM\01深入理解Java虚拟机のJVM内存区域与对象布局.md)   
+ [02深入理解Java虚拟机の垃圾回收机制.md](04.JVM\02深入理解Java虚拟机の垃圾回收机制.md)    
+ [03深入理解Java虚拟机の高效并发.md](04.JVM\03深入理解Java虚拟机の高效并发.md)   
 []()
 []()
 []()
-[]()
-[]()
-[]()
+
 ## Spring
 []()
 []()
