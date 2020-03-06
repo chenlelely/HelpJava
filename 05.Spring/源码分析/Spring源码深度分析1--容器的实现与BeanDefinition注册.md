@@ -84,7 +84,7 @@ Bean是我们需要的对象，是我们从spring内得到的结果，也就是�
 -  XmlBeanFactory初始化时序图
 ![](_v_images/20191119093339863_3290.png)
 ### 配置文件的封装
-Spring 的配置文件读取是通过 ClassPathResource 进行封装的，如` new ClassPathResource(”beanFactory Test.xml＂)`
+Spring 的配置文件读取是通过 ClassPathResource 进行封装的，如` new ClassPathResource(”beanFactoryTest.xml＂)`
 >在 Java 中，`将不同来源的资源抽象成 URL` ，通过注册不同的 handler ( URLStreamHandler )来处理不同来源的资源的读取逻辑，一般 handler 的类型使用不同前缀（协议， Protocol ）来识别，如"file：”“http：” “jar：”等，然而 URL 没有默认定义相对 Classpath 或 ServletContext 等资源的 handler ， `Spring 对其内部使用到的资源实现了自己的抽象结构 ： Resource 接口封装底层资源 `。
 
 ```java
