@@ -18,6 +18,7 @@
    2. Tomcat的工作目录：CATALINA_BASE:\program_work\Javabase\apache-tomcat-9.0.31
    3. CLASSPATH：%CATALINA_HOME%\lib\servlet-api.jar;
    4. PATH：%CATALINA_HOME%\bin;%CATALINA_HOME%\lib
+4. IDEA编辑器tomcat设置
 
 # 2. IDEA安装与配置
 
@@ -273,17 +274,19 @@ ctrl + shift + t
 
 # 4. 项目管理工具maven/gradle
 
-
+https://www.runoob.com/maven/maven-setup.html
 
 # 5. 版本控制系统git
 
-
+https://www.runoob.com/git/git-install-setup.html
 
 # 6. 数据库及可视化工具
 
-Mysql， Oracle， Redis， MongoDB（关系型数据库与非关系型数据库）
+[Mysql安装配置](https://www.runoob.com/mysql/mysql-install.html)
 
-Navicat（可视化工具）Navicat永久安装
+ Oracle， Redis， MongoDB（关系型数据库与非关系型数据库）
+
+Navicat（可视化工具）
 
 # 7. 办公软件
 
@@ -306,3 +309,13 @@ VSCode
 StarUML（作UML图）
 
 XMind（思维导图）
+
+# 10. 其他软件
+
+1. chrome
+2. 微信/企业微信/QQ
+3. 迅雷/百度网盘
+4. 搜狗输入法
+5. office/MathType
+6. shadowsock
+
