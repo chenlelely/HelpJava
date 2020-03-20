@@ -1,5 +1,29 @@
-# 6 Java并发容器和框架
-## 6.1 ConcurrentHashMap的实现原理与使用
+# 4 Java并发容器和框架
+
+同步容器类都是线程安全的， 但在某些情况下可能需要额外的客户端加锁来保护复合操作。
+容器上常见的复合操作包括： 迭代， 跳跃， 以及条件运算。  
+
+## 4.1 concurrent包的实现
+
+由于Java的CAS同时具有volatile读和volatile写的内存语义，因此Java线程之间的通信现在有了下面4种方式。
+1）A线程写volatile变量，随后B线程读这个volatile变量。
+2）A线程写volatile变量，随后B线程用CAS更新这个volatile变量。
+3）A线程用CAS更新一个volatile变量，随后B线程用CAS更新这个volatile变量。
+4）A线程用CAS更新一个volatile变量，随后B线程读这个volatile变量。
+
+**concurrent包的源代码实现，是一个通用化的实现模式。**
+
+- 首先，声明共享变量为volatile。
+
+- 然后，使用CAS的原子条件更新来实现线程之间的同步。
+
+- 同时，配合以volatile的读/写和CAS所具有的volatile读和写的内存语义来实现线程之间的通信
+
+  > AQS，非阻塞数据结构、原子变量类，这些concurrent包中的基础类都是使用这种模式来实现的
+
+<img src="04Java并发容器和框架.assets/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMwMjgxNTU5,70" alt="img" style="zoom:67%;" />
+
+## 4.1 ConcurrentHashMap的实现原理与使用
 【基于1.8】https://juejin.im/post/5aeeaba8f265da0b9d781d16
 
 在多线程环境下，使用HashMap进行put操作会引起死循环，是**因为多线程会导致HashMap的Entry链表形成环形数据结构，一旦形成环形数据结构，Entry的next节点永远不为空，就会产生死循环获取Entry**。
@@ -12,7 +36,7 @@ segments数组的长度size是通过concurrencyLevel计算得出的。为了能�
 
 segment的容量threshold＝（int）cap*loadFactor，默认情况下initialCapacity等于`16`，loadfactor等于`0.75`
 
-### 6.1.1 ConcurrentHashMap的操作
+###  ConcurrentHashMap的操作
 #### 1.get操作
 Segment的get操作实现非常简单和高效。**先经过一次再散列，然后使用这个散列值通过散列运算定位到Segment，再通过散列算法定位到元素**
 
@@ -38,7 +62,7 @@ ConcurrentHashMap的做法是**先尝试2次通过不锁住Segment的方式来�
 
 ConcurrentHashMap是如何判断在统计的时候容器是否发生了变化呢？ **使用modCount变量**，在put、remove和clean方法里操作元素前都会将变量modCount进行加1，那么在统计size前后比较modCount是否发生变化，从而得知容器的大小是否发生变化。
 
-## 6.2 ConcurrentLinkedQueue
+## 4.2 ConcurrentLinkedQueue
 【重要】https://juejin.im/post/5aeeae756fb9a07ab11112af
 在并发编程中，有时候需要使用线程安全的队列。如果要实现一个线程安全的队列有两种方式：一种是使用阻塞算法，另一种是使用非阻塞算法。**使用阻塞算法的队列可以用一个锁（入队和出队用同一把锁）或两个锁（入队和出队用不同的锁）等方式来实现。非阻塞的实现方式则可以使用循环CAS的方式来实现。**
 
@@ -63,7 +87,7 @@ ConcurrentLinkedQueue 内部的队列使用单向链表方式实现，其中有*
 
    首先获取头节点的元素，然后判断头节点元素是否为空，如果为空，表示另外一个线程已经进行了一次出队操作将该节点的元素取走，如果不为空，则使用CAS的方式将头节点的引用设置成null，如果CAS成功，则直接返回头节点的元素，如果不成功，表示另外一个线程已经进行了一次出队操作更新了head节点，导致元素发生了变化，需要重新获取头节点。
 
-## 6.3 Java中的阻塞队列
+## 4.3 Java中的阻塞队列
 阻塞队列（BlockingQueue）是一个支持两个附加操作的队列。这两个附加的操作支持阻塞的插入和移除方法。
 
 1）支持阻塞的插入方法：意思是当队列满时，队列会阻塞插入元素的线程，直到队列不满。
@@ -82,7 +106,7 @@ DelayQueue是一个支持延时获取元素的无界阻塞队列。队列使用P
 5.SynchronousQueue
 SynchronousQueue是一个不存储元素的阻塞队列。每一个put操作必须等待一个take操作，否则不能继续添加元素。它支持公平访问队列。默认情况下线程采用非公平性策略访问队列。
 
-### 6.3.1 阻塞队列的实现原理
+###  阻塞队列的实现原理
 使用**通知模式**实现。所谓通知模式，就是当生产者往满的队列里添加元素时会阻塞住生产者，当消费者消费了一个队列中的元素后，会通知生产者当前队列可用。
 
 #### ArrayBlockingQueue
@@ -199,7 +223,7 @@ private final Condition notFull = putLock.newCondition();
 相同点：ArrayBlockingQueue和LinkedBlockingQueue都是通过**condition通知机制**来实现可阻塞式插入和删除元素，并满足线程安全的特性；
 
 不同点：1. ArrayBlockingQueue底层是采用的数组进行实现，而LinkedBlockingQueue则是采用链表数据结构； 2. ArrayBlockingQueue插入和删除数据，只采用了一个lock，而LinkedBlockingQueue则是在插入和删除分别采用了putLock和takeLock，<u>这样可以降低线程由于线程无法获取到lock而进入WAITING状态的可能性，从而提高了线程并发执行的效率。</u>
-## 6.4 CopyOnWriteArrayList解读
+## 4.4 CopyOnWriteArrayList解读
 https://juejin.im/post/5aeeb55f5188256715478c21 
 由于读操作根本不会修改原有的数据，因此对于每次读取都进行加锁其实是一种资源 浪费。我们应该允许多个线程同时访问List的内部数据，毕竟读取操作是安全的。根据读写锁的思想，读锁和读锁之间确实也不冲突。但是，读操作会受到写操作的阻碍，当写发 生时，读就必须等待，否则可能读到不一致的数据。同理，当读操作正在进行时，程序也 不能进行写入。
 为了将读取的性能发挥到极致，JDK中提供了CopyOnWriteArrayList类。对它来说， **读取是完全不用加锁的**，并且更好的消息是：**写入也不会阻塞读取操作**。**只有写入和写入 之间需要进行同步等待**。这样，读操作的性能就会大幅度提升。
@@ -215,10 +239,7 @@ CopyOnWriteArrayList 中迭代器的弱一致性是怎么回事 ， 所谓弱一
 为什么说 snapshot 是 list 的 快照呢？明明是指针传递 的引用啊，而不是副本。 如果在该线程使用 返回 的法代器遍历元素 的过程 中， 其他线程没有对 list 进行增删 改，那么snapshot 本 身就是 list 的 array ， 因 为它 们 是 引 用关系。但是**如果在遍历期间 其他线程对 该list 进行了 增删 改 ，那么 snapshot 就是快照了，因为增删 改后 list 里面的 数组被新数组替 换 了 ，这时候老数组被 snapshot 引用** 。这也说明获取迭代器后 ， 使用 该法代器元素时， 其他线程对该 list 进行的增删改不可见，因为它们操作的是两个不同的数组 ， 这就是**弱一致性** 。
 
 CopyOnWriteArrayList 使用**写时复制的策略**来保证 list 的一致性，而获取一修改一写入三步操作并不是原子性的，所以在增删改的过程中都使用了独占锁，来保证在某个时间只有一个线程能对 list 数组进行修改 。 另外 CopyOnWriteAn·ayList 提供了弱 一致性的法代器 ， 从而保证在获取迭代器后，其他线程对 list 的修改是不可见的， 迭代器遍历的数组是一个快照 。 另外， CopyOnWriteArraySet 的底层就是使用它实现的
-## 6.5 Fork/Join框架
-Fork/Join框架是Java 7提供的一个用于并行执行任务的框架，是一个把大任务分割成若干个小任务，最终汇总每个小任务结果后得到大任务结果的框架。
-
-## 6.6 并发容器之ThreadLocal
+## 4.5 并发容器之ThreadLocal
 https://juejin.im/post/5aeeb22e6fb9a07aa213404a
 ### set（T value）
 set方法设置在当前线程中threadLocal变量的值，该方法的源码为：

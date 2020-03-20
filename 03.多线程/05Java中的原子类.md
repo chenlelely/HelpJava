@@ -1,8 +1,8 @@
-# 7 Java中的原子类
+# 5 Java中的原子类
 因为变量的类型有很多种，所以在Atomic包里一共提供了13个类，属于4种类型的原子更新方式，分别是**原子更新基本类型、原子更新数组、原子更新引用和原子更新属性（字段）**。Atomic包里的类基本都是使用**Unsafe实现的包装类**。
 JUC 包提供 了一系列的原子性操作类，这些类都是使用**非阻塞算法 CAS 实现的**；
 
-## 7.1原子更新基本类型类
+## 5.1原子更新基本类型类
 getAndIncrement是如何实现原子操作的呢
 
 ```java
@@ -24,7 +24,7 @@ public final boolean compareAndSet(int expect, int update) {
 Atomic包提供了3种基本类型的原子更新，但是Java的基本类型里还有char、float和double等。那么问题来了，如何原子的更新其他的基本类型呢？ Atomic包里的类基本都是使用Unsafe实现的；
 Unsafe只提供了3种CAS方法：compareAndSwapObject、compareAndSwapInt和compareAndSwapLong，再看AtomicBoolean源码，发现它是先把Boolean转换成整型，再使用compareAndSwapInt进行CAS，所以原子更新char、float和double变量也可以用类似的思路来实现。
 
-## 7.2原子更新数组
+## 5.2原子更新数组
 ````java
 public class AtomicIntegerArrayTest {
     static int[] value = new int[] { 1， 2 };
