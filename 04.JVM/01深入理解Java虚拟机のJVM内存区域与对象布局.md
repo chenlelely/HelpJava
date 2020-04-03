@@ -1,5 +1,5 @@
 Java 程序是运行在虚拟机（ JVM ）上的，而不是直接运行在操作系统上的，所以 Java语言具有编译一 次到处运行的“跨平台特性”
-![](_v_images/20191106163644475_11809.png)
+![](01深入理解Java虚拟机のJVM内存区域与对象布局.assets/20191106163644475_11809.png)
 
 # 1.Java内存区域
 ## JVM内存结构
@@ -86,7 +86,7 @@ Java 虚拟机所管理的内存 包括能装载字节码的**类装载子系统
 # 2.对象
 
 ## 2.1 对象创建过程
-![](_v_images/20191107092050075_2384.png)
+![](01深入理解Java虚拟机のJVM内存区域与对象布局.assets/20191107092050075_2384.png)
 *   **①类加载检查：** 虚拟机遇到一条 **new 指令**时，首先将去检查这个指令的参数是否能在常量池中定位到这个**类的符号引用**，并且检查这个符号引用代表的类是否已被加载过、解析和初始化过。如果没有，那必须先执行相应的**类加载过程**（加载-验证-准备-解析-初始化）。
 *   **②分配内存：** 在**类加载检查**通过后，接下来虚拟机将为新生对象**分配内存**。对象所需的内存大小在类加载完成后便可确定，为对象分配空间的任务等同于把一块确定大小的内存从 Java 堆中划分出来。
     - **内存分配的两种方式：（补充内容，需要掌握）**  
@@ -119,18 +119,59 @@ Java 虚拟机所管理的内存 包括能装载字节码的**类装载子系统
 **Java程序需要通过栈上的reference操作具体对象**
 
 *   **句柄：**   如果使用句柄的话，那么Java堆中将会划分出一块内存来作为句柄池，reference 中存储的就是对象的句柄地址，而句柄中包含了对象实例数据与类型数据各自的具体地址信息；
-    
-*    ![](https://images.gitee.com/uploads/images/2019/1104/094324_2f0ef550_5294760.png)
-    
+*   ![](01深入理解Java虚拟机のJVM内存区域与对象布局.assets/094324_2f0ef550_5294760.png)
 *   **直接指针：**  如果使用直接指针访问，那么 Java 堆对象的布局中就必须考虑如何放置访问类型数据的相关信息，而reference 中存储的直接就是对象的地址。
-    
-*   ![](https://images.gitee.com/uploads/images/2019/1104/094324_168d3431_5294760.png)
-    
+*   ![](01深入理解Java虚拟机のJVM内存区域与对象布局.assets/094324_168d3431_5294760.png)
 *   这两种对象访问方式各有优势。使用句柄来访问的最大好处是 reference 中存储的是稳定的句柄地址，在对象被移动时只会改变句柄中的实例数据指针，而 reference 本身不需要修改。使用直接指针访问方式最大的好处就是速度快，它节省了一次指针定位的时间开销。
 
-## 1.4 String 类和常量池
+## 2.4 内存溢出和内存泄漏
 
-**1 String 对象的两种创建方式：**
+### 堆溢出
+Java 堆用于存储对象实例， 只要不断增加对象， 并且保证 GC Roots 到对象之间有可达路径来避免垃圾回收机制清除这些对象， 那么在对象数量达到最大堆的容量限制后就会产生OOM 异常。  
+
+> VM Options: -Xms20m -Xmx20m -XX:+HeapDumpOnOutOfMemoryError  
+
+- 要解决这个区域的异常， 一般的手段是通过内存映像分析工具对 dump 出来的堆转储快照进行分析， 重点是确认内存中的对象是否是必要的， 也就是要判断是出现来内存泄露还是内存溢出。 前者的话要进一步通过工具查看泄露对象到 GC Roots 的引用链； 后者的话可以**调大虚拟机的堆参数（-Xms 和-Xmx）** ， 或者从代码上检查某些对象**生命周期过长**等  
+
+### 栈溢出（虚拟机栈和本地方法栈）
+对于 HotSpot 来说， 虽然-Xoss 参数（设置本地方法栈大小） 存在， 但实际上是无效的， 栈容量只由`-Xss `参数设定。 关于虚拟机栈和本地方法栈， 在 JVM 规范中描述了两种异常：
+
+1. 如果线程请求的栈深度大于虚拟机所允许的最大深度， 将抛出 StackOverflowError 异常。
+2. 如果虚拟机在扩展栈时无法申请到足够的内存空间， 将抛出 OutOfMemoryError 异常。  
+
+> -Xss128k（设置栈容量）  
+
+- 操作系统分配给每个进程的内存是有限制的， 每个线程分配到的栈容量越大， 可以建立的线程数量自然就越少， 建立线程时就越容易把剩下的内存耗尽。
+- 如果线程过多导致 SOF， 可以通过**减少最大堆和减少栈容量**来换取更多的线程。  
+
+### 方法区溢出
+注意 Java8 下运行时常量池在堆中， 所以运行时常量池过大会体现为 `OOM：heap`；
+而在此以前是放在永久代中， 体现为 `OOM：PermGen space`。  
+
+> VM Options: -Xms20m -Xmx20m  
+
+方法区还存放 Class 的相关信息， 运行时产生大量的类也会导致方法区（Java8 中放在直接内存中） 溢出  
+
+> VM Options: -XX:MetaspaceSize=10m -XX:MaxMetaspaceSize=10m  
+
+- 方法区溢出也是一种常见的内存溢出异常， 一个类被 GC， 判定条件是比较苛刻的。 在经常生成大量 Class 的应用中， 需要特别注意类的回收情况。 这类场景除了动态代理生成类和动态语言外， 还有： 大量使用 JSP、 基于 OSGi 的应用  
+
+### 直接内存溢出
+直接内存可以使用`-XX:MaxDirectMemorySize` 指定， 如果不指定， 则默认与 Java 堆最大值相同。
+虽然使用 DirectByteBuffer 分配内存也会抛出 OOM 异常， 但它抛出异常时并没有真正向 OS申请分配内存， 而是通过计算得知内存无法分配， 于是手动抛出异常。
+
+真正申请内存的方法是 `nsafe.allocateMemory()`。  
+
+> VM Options: -XX:MaxDirectMemorySize=10m  
+
+### 内存泄露
+1） 非静态内部类
+2） 连接未关闭： 比如数据库连接（dataSourse.getConnection()） ， 网络连接(socket)和 io 连接， 除非其显式的调用了其 close（） 方法将其连接关闭， 否则是不会自动被 GC 回收的。  
+
+## 2.5 String 类和常量池
+
+### **1 String 对象的两种创建方式：**
+
 ```
 String str1 = "abcd";
 String str2 = new String("abcd");  
@@ -138,12 +179,13 @@ System.out.println(str1==str2);//false
 ```
 第一种方式是在常量池中拿对象，第二种方式是直接在堆内存空间创建一个新的对象。
 
-![](https://images.gitee.com/uploads/images/2019/1104/094847_6297a6fc_5294760.png)
+![](01深入理解Java虚拟机のJVM内存区域与对象布局.assets/094847_6297a6fc_5294760.png)
 
-**2 String 类型的常量池比较特殊。它的主要使用方法有两种：**
+### 2 String 类型的常量池
 直接使用**双引号**声明出来的 String 对象会直接存储在**常量池**中。   
-如果不是用双引号声明的 String 对象，可以使用 String 提供的 intern() 方法。
-    - **String.intern()**是一个 Native 方法，它的作用是：**如果运行时常量池中已经包含一个等于此 String 对象内容的字符串，则返回常量池中该字符串的引用；如果没有，则在常量池中创建与此 String 内容相同的字符串，并返回常量池中创建的字符串的引用。**
+如果不是用双引号声明的 String 对象，可以使用 String 提供的` intern()` 方法。
+
+- **String.intern()**是一个 Native 方法，它的作用是：**如果运行时常量池中已经包含一个等于此 String 对象内容的字符串，则返回常量池中该字符串的引用；如果没有，则在常量池中创建与此 String 内容相同的字符串，并返回常量池中创建的字符串的引用。**
 
 ```
 String s1 = new String("计算机");
@@ -154,8 +196,10 @@ System.out.println(s1 == s2);//false，因为一个是堆内存中的String对�
 System.out.println(s3 == s2);//true，因为两个都是常量池中的String对象
 ```
 
-**3 String 字符串拼接**
+### 3 String 字符串拼接
+
 尽量避免使用引用进行多个字符串拼接，因为这样会重新创建对象。如果需要改变字符串的话，可以使用 StringBuilder 或者 StringBuffer。
+
 ```
 String str1 = "str";
 String str2 = "ing";
@@ -167,17 +211,17 @@ System.out.println(str3 == str5);//true
 System.out.println(str4 == str5);//false
 ```
 
-![](https://images.gitee.com/uploads/images/2019/1104/094847_524fe5de_5294760.png)
+![](01深入理解Java虚拟机のJVM内存区域与对象布局.assets/094847_524fe5de_5294760.png)
 
 > **String s1 = new String("abc");这句话创建了几个对象？**  
 > 创建了两个对象。先有字符串"abc"放入常量池，然后 new 了一份字符串"abc"放入Java堆(字符串常量"abc"在编译期就已经确定放入常量池，而 Java 堆上的"abc"是在运行期初始化阶段才确定)，然后 Java 栈的 str1 指向Java堆上的"abc"。
 
-## 1.5 Integer常量
+## 2.6 Integer常量
 
-1. Integer i = value;如果i是在`-128到127`之间，不会去堆中创建对象，而是直接返回IntegerCache中的值;如果值不在上面范围内则会从堆中创建对象。`"=" 走的是valueOf()方法,valueOf(int)会走缓存`。
-2. Integer i2 = new Integer(xxxx);不管参数的value是多少都会从堆中创建对象，与IntegerCache没关系。
-3.  **Integer.valueOf()** 返回一个表示指定的 int 值的`Integer 实例`。内部是“如果i在-128~127之间直接返回IntegerCache中的Integer实例，否则使用构造方法 Integer(int)创建新的实例”，该方法有可能通过缓存经常请求的值而显著提高空间和时间性能。
-4.  Integer.parseInt(string s)的作用就是把字符串s解析成有符号的`int基本类型`
-5.  Integer.valueOf(s)把字符串s解析成Integer对象类型，返回的integer包装类型 可以调用对象中的方法。
+1. `Integer i = value`;如果i是在`-128到127`之间，不会去堆中创建对象，而是直接返回IntegerCache中的值;如果值不在上面范围内则会从堆中创建对象。`"=" 走的是valueOf()方法,valueOf(int)会走缓存`。
+2. `Integer i2 = new Integer(xxxx)`;不管参数的value是多少都会从堆中创建对象，与IntegerCache没关系。
+3.  `Integer.valueOf() `返回一个表示指定的 int 值的`Integer 实例`。内部是“如果i在-128~127之间直接返回IntegerCache中的Integer实例，否则使用构造方法 Integer(int)创建新的实例”，该方法有可能通过缓存经常请求的值而显著提高空间和时间性能。
+4.  `Integer.parseInt(string s)`的作用就是把字符串s解析成有符号的`int基本类型`
+5.  `Integer.valueOf(String s)`把字符串s解析成Integer对象类型，返回的integer包装类型 可以调用对象中的方法。
 
-![](https://images.gitee.com/uploads/images/2019/1104/094848_d3d5e448_5294760.png)
+![](01深入理解Java虚拟机のJVM内存区域与对象布局.assets/094848_d3d5e448_5294760.png)
