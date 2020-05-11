@@ -1,4 +1,4 @@
-# 10 Spring的事务管理
+# 10-1 Spring的事务管理
 
 《精通Spring4.x》
 
@@ -6,7 +6,7 @@
 
 ### 数据库事务
 
-数据库事务有严格的定义，它必须同时满足4个特性：原子性（Atomic)、一致性（Consistency)、隔离性（Isolation)和持久性（Durabiliy），简称为ACID。
+数据库事务有严格的定义，它必须同时满足4个特性：**原子性（Atomic)、一致性（Consistency)、隔离性（Isolation)和持久性（Durabiliy）**，简称为ACID。
 
 - 原子性：表示组成一个事务的多个数据库操作是一个不可分割的原子单元，只有所有的操作执行成功，整个事务才提交。事务中的任何一个数据库操作失败，已经执行的任何操作都必须撤销，让数据库返回到初始状态。
 - 一致性：事务操作成功后，数据库所处的状态和它的业务规则是一致的，即数据不会被破坏。如从A账户转账100元到B账户，不管操作成功与否，A账户和B账户的存款总额是不变的。
@@ -147,4 +147,158 @@ ThreadLocal 和线程同步机制都是为了解决多线程中相同变量的�
 > 要做到同一事务多DAO共享同一个Connection，必须在一个共同的外部类使用ThreadLocal 保存Connection。
 
 ## Spring对事务管理的支持
+
+Spring为事务管理提供了一致的编程模板，在高层次建立了统一的事务抽象。也就是说，不管是选择SpringJDBC、Hibernate、JPA还是选择MyBatis，Spring都可以让用户用统一的编程模型进行事务管理。
+
+### 事务管理关键抽象
+在Spring 事务管理SPI（Service Provider Interface)的抽象层主要包括3个接口，分别是`PlatformTransactionManager`、`TransactionDefinition`和`TransactionStatus`，它们位于org.springframework.transaction包中。
+
+![image-20200510153813719](10Spring的事务管理.assets/image-20200510153813719.png)
+
+- TransactionDefinition 用于描述事务的隔离级别、超时时间、是否为只读事务和事务传播规则等控制事务具体行为的事务属性，这些事务属性可以通过XML配置或注解描述提供，也可以通过手工编程的方式设置。
+- Platform TransactionManager 根据TransactionDefinition 提供的事务属性配置信息创建事务，并用TransactionStatus描述这个激活事务的状态。
+
+### 的事务管理器实现类
+Spring将事务管理委托给底层具体的持久化实现框架来完成。因此，**Spring为不同的持久化框架提供了Platform TransactionManager接口的实现类。**
+
+要实现事务管理，首先要在Spring中配置好相应的事务管理器，为事务管理器指定数据资源及一些其他事务管理控制属性。下面来看一下几个常见的事务管理器的配置。
+
+-----
+
+**Spring JDBC和MyBatis**
+
+如果使用Spring JDBC或MyBatis，由于它们都基于数据源的Connection访问数据库，所以可以使用`DataSourceTransactionManager`，只要在Spring中进行以下配置就可以了
+
+![image-20200510154538561](10Spring的事务管理.assets/image-20200510154538561.png)
+
+### 事务同步管理器
+Spring将JDBC的Connection、Hibernate的Session 等访问数据库的连接或会话对象统称为**资源**，这些资源在同一时刻是不能多线程共享的。为了让DAO、Service类可能做到singleton，Spring的事务同步管理器类org.springframework.transaction.support.`TransactionSynchronizationManager `**使用ThreadLocal为不同事务线程提供了独立的资源副本，同时维护事务配置的属性和运行状态信息**。**事务同步管理器是Spring事务管理的基石**，不管用户使用的是编程式事务管理，还是声明式事务管理，都离不开事务同步管理器。
+
+![image-20200510155018723](10Spring的事务管理.assets/image-20200510155018723.png)
+
+> TransactionSynchronizationManager将DAO、Service类中影响线程安全的所有“状态”统一抽取到该类中，并用ThreadLocal进行替换
+
+Spring框架为不同的持久化技术提供了一套从`TransactionSynchronizationManager`中获取对应线程绑定资源的工具类。
+
+![image-20200510155146352](10Spring的事务管理.assets/image-20200510155146352.png)
+
+> 这些工具类都提供了静态的方法，通过这些方法可以获取和当前线程绑定的资源，如DataSourceUtils.getConnection(DataSource dataSource)方法可以从指定的数据源中获取和当前线程绑定的Connection
+>
+> Spring为不同的持久化技术提供了**模板类**，模板类在内部通过资源获取工具类间接访问TransactionSynchronizationManager中的线程绑定资源。所以，如果DAO使用模板类进行持久化操作，这些DAO就可以配置成singleton。如果不使用模板类，也可以直接通过资源获取工具类访问线程相关的资源。
+
+### 事务传播行为
+
+当我们遇用一个基于Spring的Service接口方法（如UserService#addUser0)时，它将运行于Spring管理的事务环境中，Service 接口方法可能会在<u>内部调用其他的Service接口方法</u>以共同完成一个完整的业务操作，因此就会产生**服务接口方法嵌套调用的情况**，Spring通过事务传播行为控制当前的事务如何传播到被嵌套调用的目标服务接口方法中。
+
+Spring在`TransactionDefinition`接口中规定了7种类型的事务传播行为，它们规定了事务方法和事务方法发生嵌套调用时事务如何进行传播。
+
+![image-20200510155558510](10Spring的事务管理.assets/image-20200510155558510.png)
+
+### 编程式事务
+
+在实际应用中很少需要通过编程来进行事务管理Spring还是为编程式事务管理提供了模板类org.springframework.transaction.support.`TransactionTemplate`,以满足一些特殊场合的需要。
+
+Transaction Template和那些持久化模板类一样是线程安全的，因此，可以在多个业务类中共享Transaction Template 实例进行事务管理。
+
+![image-20200510155811109](10Spring的事务管理.assets/image-20200510155811109.png)
+
+### 使用XML配置声明式事务
+大多数Spring用户选择声明式事务管理的功能，这种方式对代码的侵入性最小，可以让事务管理代码完全从业务代码中移除，非常符合非侵入式轻量级容器的理念。
+
+Spring的声明式事务管理是通过Spring AOP实现的，通过事务的声明性信息，Spring负责将事务管理增强逻辑动态织入业务方法的相应连接点中。这些逻辑包括获取线程绑定资源、开始事务、提交/回滚事务、进行异常转换和处理等工作。
+
+----
+
+- **服务接口编写：**
+
+原始Service类：
+
+![image-20200510175338156](10Spring的事务管理.assets/image-20200510175338156.png)
+
+> 过时的：TransactionProxyFactoryBean;有助于理解原理
+>
+> ![image-20200510180541441](10Spring的事务管理.assets/image-20200510180541441.png)
+
+- applicationContext-tx.xml:**使用aop/tx命名空间**
+
+![image-20200510180325316](10Spring的事务管理.assets/image-20200510180325316.png)
+
+在这一过程中我们看到了3种角色：**通过aop/tx定义的声明式事务配置信息、业务Bean、Spring容器**。
+
+Spring容器自动将第一者应用于第二者，从容器中返回的业务Bean已经是被织入事务增强的代理Bean，即第一者和第二者在配置时不直接发生关系。
+
+而在使用TransactionProxyFactoryBean 进行事务配置时，TransactionProxyFactoryBean需要直接通过target属性引用目标业务Bean，结果造成目标业务Bean往往需要使用target进行命名（如userService Target），以避免和最终代理Bean名称（如userService)冲突。
+
+使用aop/tx方式后，业务Bean的名称不需要做任何“配合性”的调整，aop直接通过切点表达式语言就可以对业务Bean进行定位。从这个意义上来说，aop/tx的配置方式对业务Bean是“无侵入”的，而TransactionProxyFactoryBean的配置显然是“侵入式”的。
+
+在aop命名空间中，通过**切点表达式语言**，将com.smart.service包下所有以Forum为后缀的类纳入了需要进行事务增强的范围，并配合·`<tx:advice>`的`<aop:advisor>`完成了事务切面的定义，如②处所示。
+
+`<aop:advisor>`引用的`txAdvice`增强是在tx命名空间上定义的，如③处所示。首先，**事务增强一定需要一个事务管理器的支持**，`<tx:advice>`通过transaction-manager 属性引用了①处定义的事务管理器（它默认查找名为transactionManager的事务管理器，所以如果事务管理器命名为transactionManager，则可以不指定transaction-manager属性）。在③-1中我们看到，原来掺杂在一起，以逗号分隔字符串定义的事务属性，现在变成了一个结构清晰的XML片段。
+
+> `<tx:method>`元素属性表：
+>
+> ![image-20200510181542501](10Spring的事务管理.assets/image-20200510181542501.png)
+
+### 使用注解配置声明式事务
+
+- 使用@Transactional注解
+
+![image-20200510181824682](10Spring的事务管理.assets/image-20200510181824682.png)
+
+因为注解本身具有一组普适性的默认事务属性，所以往往只要在需要事务管理的业务类中添加一个@Transactional注解，就完成了业务类事务属性的配置。
+当然，注解只提供元数据，它本身并不能完成事务切面织入的功能。因此，还需要在Spring 配置文件中通过一行小小的配置“通知”Spring 容器对标注@Transactional注解的Bean进行加工处理，如代码所示。
+
+![image-20200510184517435](10Spring的事务管理.assets/image-20200510184517435.png)
+
+在默认情况下，`<tx:annotation-driven>`会自动使用名为“transactionManager”的事务管理器。所以，如果用户的事务管理器id为“transactionManager”，则可以进一步将①处的配置简化为“`<tx:annotation-driven/>`”。
+`<tx:annotation-driven>`还有另外两个属性。
+
+- `proxy-target-class`:如果为true，则Spring将通过创建子类来代理业务类；如果为false，则使用基于接口的代理。如果使用子类代理，则需要在类路径中添加CGLib.jar类库。
+- `order`：如果业务类除事务切面外，还需要织入其他的切面，则通过该属性可以控制事务切面在目标连接点的织入顺序。
+
+----
+
+1. 关于@Transactional的属性
+
+基于@Transactional注解的配置和基于XML的配置方式一样，它拥有一组普适性很强的默认事务属性，往往可以直接使用这些默认的属性。
+
+- 事务传播行为：PROPAGATION_REQUIRED。
+- 事务隔离级别：ISOLATION_DEFAULT。
+- 读写事务属性：读/写事务。
+- 超时时间：依赖于底层的事务系统的默认值。
+- 回滚设置：任何运行期异常引发回滚，任何检查型异常不会引发回滚。
+
+![image-20200510185003691](10Spring的事务管理.assets/image-20200510185003691.png)
+
+----
+
+2. 在何处标注@Transactional 注解
+
+@Transactional 注解可以被应用于接口定义和接口方法、类定义和类的public方法上。
+
+**但Spring 建议在业务实现类上使用@Transactional注解**。当然也可以在业务接口上使用@Transactional注解，但这样会留下一些容易被忽视的隐患。因为注解不能被继承，所以在业务接口中标注的@Transactional 注解不会被业务实现类继承。
+
+另外在方法处使用@Transactional 注解会覆盖类定义上的注解
+
+---
+
+3. 使用不同的事务管理器
+
+一般情况下，一个应用仅需使用一个事务管理器。如果希望在不同的地方使用不同的事务管理器，则可以通过如下方式实现：
+
+![image-20200510185248973](10Spring的事务管理.assets/image-20200510185248973.png)
+
+并且在XML中配置不同的事务管理器：
+
+![image-20200510185341037](10Spring的事务管理.assets/image-20200510185341037.png)
+
+------
+
+-----
+
+# 10-2 Spring事务管理的难点
+
+## DAO与事务管理
+
+事务管理的目的是保证数据操作的事务性（原子性、一致性、隔离性、持久性，即所谓的ACID)，脱离了事务性，DAO照样可以顺利地进行数据操作。
 

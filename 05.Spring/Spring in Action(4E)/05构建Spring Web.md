@@ -17,6 +17,12 @@ Spring MVC基于模型-视图-控制器（Model-View-Controller， MVC） 模式
 
 ## 2JavaConf搭建Spring MVC
 
+要了解Spring MVC框架的工作机理，必须回答以下3个问题。
+
+1. DispatcherServlet 框架如何截获特定的HTTP 请求并交由Spring MVC框架处理？
+2. 位于Web层的Spring容器（`WebApplicationContext`)如何与位于业务层的Spring容器（`ApplicationContext`)建立关联，以使Web层的Bean可以调用业务层的Bean?
+3. 如何初始化SpringMVC的各个组件，并将它们装配到DispatcherServlet中?
+
 ### 2.1 配置DispatcherServlet  
 
 按照传统的方式， 像DispatcherServlet这样的Servlet会配置在web.xml文件中， 这个文件会放到应用的WAR包里面
@@ -25,7 +31,7 @@ Spring MVC基于模型-视图-控制器（Model-View-Controller， MVC） 模式
 
   ![image-20200501230133525](05SpringMVC起步.assets/image-20200501230133525.png)
 
-> - 在Servlet 3.0环境中， 容器会在类路径中查找实现`javax.servlet.ServletContainerInitializer`接口的类，如果能发现的话， 就会用它来配置Servlet容器。扩展`AbstractAnnotationConfigDispatcherServletInitializer`的任意类都会**自动地配置DispatcherServlet上下文和Spring应用上下文**， Spring的应用上下文会位于应用程序的Servlet上下文之中。  
+> - 在Servlet 3.0环境中， 容器会在类路径中查找实现`javax.servlet.ServletContainerInitializer`接口的类，如果能发现的话， 就会用它来配置Servlet容器。在Spring中扩展`AbstractAnnotationConfigDispatcherServletInitializer`的任意类在容器启动时候都会被自动发现，并**配置DispatcherServlet上下文和Spring应用上下文**。  
 > - `getServletMappings()`， 它会将一个或多个路径映射到DispatcherServlet上。 在本例中， 它映射的是“/”， 这表示它会是应用的默认Servlet。 它会处理进入应用的所有请求  
 > - `getServletConfigClasses()`方法中， 我们要求DispatcherServlet加载应用上下文时， 使用定义在WebConfig配置类（使用Java配置） 中的bean。  
 > - 本例中， 根配置定义在RootConfig中， DispatcherServlet的配置声明在WebConfig中  
@@ -34,9 +40,9 @@ Spring MVC基于模型-视图-控制器（Model-View-Controller， MVC） 模式
 
 **DispatcherServlet和一个Servlet监听器（也就是ContextLoaderListener） 的关系**  
 
-当DispatcherServlet启动的时候， 它会**创建Spring应用上下文**，并加载配置文件或配置类中所声明的bean。 
+当DispatcherServlet启动的时候， 它会**创建`webApplicationContext`应用上下文**，并加载配置文件或配置类中所声明的bean。 
 
-在Spring Web应用中， 通常还会有另外一个应用上下文，这个应用上下文是**由ContextLoaderListener创建的**。   
+在Spring Web应用中， 通常还会有另外一个**应用上下文`applicationContext`**，这个应用上下文是**由ContextLoaderListener创建的**。   
 
 我们希望**DispatcherServlet加载包含Web组件的bean， 如控制器、 视图解析器以及处理器映射， ContextLoaderListener要加载应用中的其他bean。 这些bean通常是驱动应用后端的中间层和数据层组件**。  
 
@@ -203,22 +209,24 @@ Java校验API所提供的校验注解：
 
 **web.xml：**
 
-![image-20200504194431108](05构建Spring Web.assets/image-20200504194431108.png)
+![image-20200511222122793](05构建Spring Web.assets/image-20200511222122793.png)
 
 > **ContextLoaderListener和DispatcherServlet各自都会加载一个Spring应用上下文**。ContextLoaderListener和DispatcherServlet都会在Web容器启动的时候加载一下bean配置. 区别在于:
 >
-> - **DispatcherServlet一般会加载MVC相关的bean配置管理**(如: ViewResolver, Controller, MultipartResolver, ExceptionHandler, etc.)
-> - **ContextLoaderListener一般会加载整个Spring容器相关的bean配置管理**(如: Log, Service, Dao, PropertiesLoader, etc.)
-> - DispatcherServlet默认使用WebApplicationContext作为上下文.
-> - 值得注意的是, DispatcherServlet的上下文仅仅是Spring MVC的上下文, 而ContextLoaderListener的上下文则对整个Spring都有效. 一般Spring web项目中同时会使用这两种上下文. 
+> - **ContextLoaderListener一般会加载整个Spring容器相关的bean配置管理**(如: Log, Service, Dao, PropertiesLoader, etc.),使用·`ApplicationContext`作为上下文
+> - **DispatcherServlet一般会加载MVC相关的bean配置管理**(如: ViewResolver, Controller, MultipartResolver, ExceptionHandler, etc.)。默认使用`WebApplicationContext`作为上下文.
 >
-> 上下文参数contextConfigLocation指定了一个XML文件的地址， 这个文件定义了根应用上下文， 它会被ContextLoaderListener加载。 如程序所示， 根上下文会从“`/WEB-INF/spring/root-context.xml`”中加载bean定义。  
+> 上下文参数contextConfigLocation是一个ServletContextListener，它通过contextConfigLocation 参数所指定的Spring配置文件启动“业务层”的Spring容器。 如程序所示， 根上下文会从“`/WEB-INF/spring/root-context.xml`”中加载bean定义。  
 >
-> DispatcherServlet会根据Servlet的名字找到一个文件， 并基于该文件加载应用上下文。 在程序清单中， Servlet的名字是appServlet， 因此DispatcherServlet会从“`/WEBINF/appServlet-context.xml`”文件中加载其应用上下文 
+> DispatcherServlet会根据Servlet的名字找到一个文件， 并基于该文件加载应用上下文。 在程序清单中， Servlet的名字是appServlet， 因此DispatcherServlet会从“`/WEBINF/appServlet-context.xml（<servlerName>-context.xml）`”文件中加载其应用上下文 
+>
+> > 值得注意的是, DispatcherServlet的上下文仅仅是Spring MVC的上下文, 而ContextLoaderListener的上下文则对整个Spring都有效. 一般Spring web项目中同时会使用这两种上下文. 
 
-> > - Spring的ContextLoaderListener所创建出来的context和Spring MVC DispatcherServlet所创建出来的context是父子关系，FrameworkServlet在实例化对应的applicationContext后通过setParent将从ServletContext中获取到的**ContextLoaderListener创建的applicaitonContext设置成父上下文**，然后加载在对应的xml配置文件对其初始化。
+> > - Spring的ContextLoaderListener所创建出来的ApplicationContext和Spring MVC DispatcherServlet所创建出来的WebApplicationContext是父子关系，FrameworkServlet在实例化对应的webapplicationContext后通过setParent将从ServletContext中获取到的**ContextLoaderListener创建的applicaitonContext设置成父上下文**，然后加载在对应的xml配置文件对其初始化。
 > >
-> > - father WebApplicationContext里的bean可以被注入到child WebApplicationContext里的bean，而child WebApplicationContext的bean则不能被注入到parent WebApplicationContext里的bean。所以在使用Spring MVC时启用自动检测功能，应在**applicationContext.xml里只component-scan非Controller的类，而在Spring MVC里只component-scan Controller类**
+> > - 在这里里，“Web层”Spring容器将作为“业务层”Spring容器的子容器，即“Web层”容器可以引用“业务层”容器的Bean，而“业务层”容器却访问不到“Web层”容器的Bean。
+> >
+> > - 所以在使用Spring MVC时启用自动检测功能，应在**applicationContext.xml里只component-scan非Controller的类，而在Spring MVC里只component-scan Controller类**
 > >
 > > - ```xml
 > >   <--applicationContext.xml-->
