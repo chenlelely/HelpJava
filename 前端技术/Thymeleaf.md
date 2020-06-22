@@ -1,6 +1,8 @@
-## Thymeleaf
+# Thymeleaf
 
-　　![img](Thymeleaf.assets/1526344-20190819082030281-365398880-1587991502549.png)
+https://www.thymeleaf.org/
+
+https://www.thymeleaf.org/documentation.html　　![img](Thymeleaf.assets/1526344-20190819082030281-365398880-1587991502549.png)
 
 官网部分翻译：反正就是各种好
 
@@ -142,8 +144,6 @@ public class User {
 
 然后在模型中添加数据
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
 ```
 @GetMapping("test2")
 public String test2(Model model){
@@ -246,7 +246,9 @@ ognl提供了类似js的语法方式：
 - 首先在 `h2`上 用 `th:object="${user}"`获取user的值，并且保存
 - 然后，在`h2`内部的任意元素上，可以通过 `*{属性名}`的方式，来获取user中的属性，这样就省去了大量的`user.`前缀了
 
-
+> “${}”表达式（如${spitter}） 是变量表达式（variableexpression） 。 一般来讲， 它们会是对象图导航语言（Object-GraphNavigation Language， OGNL） 表达式 。
+>
+> “*{}”表达式， 它们是选择表达式（selection expression） 。 变量表达式是基于整个SpEL上下文计算的， 而选择表达式是基于某一个选中对象计算的。  选中对象就是`<form>`标签中`th:object`属性所设置的对象  
 
 ### 方法
 

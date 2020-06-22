@@ -1,0 +1,758 @@
+# Filter
+
+## 什么是过滤器
+
+过滤器 JavaWeb 三大组件之一， 它与 Servlet 很相似！ 不过过滤器是用来拦截请求的，而不是处理请求的。
+
+当用户请求某个 Servlet 时， 会**先执行部署在这个请求上的 Filter**， 如果 Filter“放行”，那么会继承执行用户请求的 Servlet； 如果 Filter 不“ 放行”， 那么就不会执行用户请求的Servlet。
+
+其实可以这样理解， 当用户请求某个 Servlet 时， Tomcat 会去执行注册在这个请求上的Filter， 然后是否“放行” 由 Filter 来决定。 可以理解为， Filter 来决定是否调用 Servlet！ 当执行完成 Servlet 的代码后， 还会执行 Filter 后面的代码 。 
+
+<img src="02Filter.assets/image-20200514124115830.png" alt="image-20200514124115830" style="zoom:80%;" />
+
+过滤器可以做：**过滤一些敏感的字符串【规定不能出现敏感字符串】、避免中文乱码【规定Web资源都使用UTF-8编码】、权限验证等**
+
+## 过滤器的生命周期
+
+- `init(FilterConfig)`:在服务器启动时会创建 Filter实例，并且每个类型的Filter只创建一个实例，从此不再创建！在创建完Filter实例后，会马上调用`init()`方法完成初始化工作，这个方法只会被执行一次；
+- `doFilter(ServletRequest req,ServletResponse res,FilterChain chain)`:这个方法会在用户每次访问“目标资源`（<url->pattern>index.jsp</url-pattern>)`时执行，如果需要“放行”，那么需要调用FilterChain接口对象的`doFilter(ServletRequest,ServletResponse)`方法，如果不调用FilterChain的doFilter()方法，那么目标资源将无法执行；
+- `destroy()`:服务器会在创建 Filter对象之后，把Filter放到缓存中一直使用，通常不会销毁它。一般会在服务器关闭时销毁Filter对象，在销毁Filter对象之前，服务器会调用Filter对象的 destory()方法。
+- 单例，同Servlet一致
+
+## FilterConfig
+Filter 接口中的init()方法的参数类型为FilterConfig类型。它的功能与ServletConfig相似，与web.xml文件中的配置信息对应。下面是FilterConfig的功能介绍：
+
+- ServletContext getServletContext():获取 ServletContext的方法；
+- String getFilterName()：获取Filter的配置名称；与`<filter-name>`元素对应；
+- String getlnitParameter(String name)：获取Filter的初始化配置，与`<init-param>`元素对应；
+- Enumeration getlnitParameterNames():获取所有初始化参数的名称。
+
+![image-20200308104657001](02Filter.assets/image-20200308104657001.png)
+
+## FilterChain
+doFilter()方法的参数中有一个类型为FilterChain的参数，它只有一个方法：
+`doFilter(ServletRequest,ServletResponse,FilterChain)`。
+
+前面我们说doFilter()方法的放行，让请求流访问目标资源！但这么说不严谨，其实调用该方法的意思是，“我（当前Filter)”放行了，但不代表其他人（其他过滤器）也放行。
+
+如果当前过滤器是最后一个过滤器，那么调用chain.doFilter()方法表示执行目标资源，而不是最后一个过滤器，那么chain.doFilter()表示执行下一个过滤器的doFilter()方法。
+
+## 四种拦截方式
+
+其实过滤器有四种拦截方式！分别是：REQUEST、FORWARD、INCLUDE、ERROR。
+
+- REQUEST:**用户直接访问目标资源时执行过滤器**。包括：在地址栏中直接访问、表单提交、超链接、重定向，只要在地址栏中可以看到目标资源的路径，就是REQUEST
+- FORWARD：转发访问执行过滤器。包括`RequestDispatcher.forward()`方法、`<jsp:forward>`标签都是转发访问
+- INCLUDE：包含访问执行过滤器。包括`RequestDispatcher.include()`方法、`<jsp：include>`标签都是包含访问；
+- ERROR：当目标资源在web.xml中配置为`<error-page>`中时，并且真的出现了异常，转发到目标资源时，会执行过滤器。
+
+## 过滤器的应用场
+
+1. 执行目标资源之前做预处理工作，例如**设置编码**，这种通常都会放行，只是在目标资源执行之前做一些准备工作；
+   几乎是所有的Sevlet中都需要写request.setCharacterEndoing0可以把它放入到一个Filter中
+2. 通过条件判断是否放行，例如校验当前**用户是否已经登录**，或者用户lP是否已经被禁用；
+3. 在目标资源执行后，做一些后续的特殊处理工作，例如把目标资源输出的数据进行处理；
+
+## 快速入门
+
+### 写一个简单的过滤器
+
+实现Filter接口的Java类就被称作为过滤器
+
+```
+public class FilterDemo1 implements Filter {
+      public void destroy() {
+      } 
+      public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+          //执行这一句，说明放行（让下一个过滤器执行，如果没有过滤器了，就执行执行目标资源）
+          chain.doFilter(req, resp);
+      }
+      public void init(FilterConfig config) throws ServletException {         
+      }
+  }
+```
+
+### filter部署
+
+**过滤器和Servlet是一样的，需要部署到Web服务器上的。**
+
+#### 第一种方式：在web.xml文件中配置
+
+**`  <filter>`用于注册过滤器**
+
+```xml
+  <filter>
+      <filter-name>FilterDemo1</filter-name>
+      <filter-class>FilterDemo1</filter-class>
+      <init-param>
+           <param-name>word_file</param-name> 
+           <param-value>/WEB-INF/word.txt</param-value>
+       </init-param>
+  </filter>
+```
+
+- `<filter-name>`用于**为过滤器指定一个名字**，该元素的内容不能为空。
+- `<filter-class>`元素用于指定过滤器的**完整的限定类名**。
+- `</init-param>`元素用于为过滤器指定初始化参数，它的子元素指定参数的名字，`<param-value>`指定参数的值。在过滤器中，可以**使用FilterConfig接口对象来访问初始化参数**。
+
+----
+
+`<filter-mapping>`元素用于**设置一个Filter 所负责拦截的资源**。
+
+一个Filter拦截的资源可**通过两种方式来指定：Servlet 名称和资源访问的请求路径**
+
+```xml
+<filter-mapping>
+        <filter-name>FilterDemo1</filter-name>
+        <url-pattern>/*</url-pattern>
+ </filter-mapping>
+```
+
+- `<filter-name>`子元素用于设置filter的注册名称。**该值必须是在元素中声明过的过滤器的名字**
+- **`<url-pattern>`设置 filter 所拦截的请求路径(过滤器关联的URL样式)**
+- `<servlet-name>`**指定过滤器所拦截的Servlet名称**。
+- `<dispatcher>`指定过滤器所拦截的资源被 Servlet 容器调用的方式，可以是**REQUEST,INCLUDE,FORWARD和ERROR之一，默认REQUEST**。用户可以设置多个`<dispatcher>` 子元素**用来指定 Filter 对资源的多种调用方式进行拦截。**
+
+####  第二种方式：通过注解配置
+
+```xml
+  @WebFilter(filterName = "FilterDemo1",urlPatterns = "/*")
+```
+
+上面的配置是“/*”，所有的Web资源都需要途径过滤器
+
+**如果想要部分的Web资源进行过滤器过滤则需要指定Web资源的名称即可！**
+
+## Filter简单应用
+
+- filter的三种典型应用：
+- **1、可以在filter中根据条件决定是否调用chain.doFilter(request, response)方法，即是否让目标资源执行**
+- **2、在让目标资源执行之前，可以对request\response作预处理，再让目标资源执行**
+- **3、在目标资源执行之后，可以捕获目标资源的执行结果，从而实现一些特殊的功能**
+
+### 禁止浏览器缓存所有动态页面
+
+```java
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+
+        //让Web资源不缓存，很简单，设置http中response的请求头即可了！
+
+        //我们使用的是http协议，ServletResponse并没有能够设置请求头的方法，所以要强转成HttpServletRequest
+
+        //一般我们写Filter都会把他俩强转成Http类型的
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) resp;
+
+        response.setDateHeader("Expires", -1);
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Pragma", "no-cache");
+
+        //放行目标资源的response已经设置成不缓存的了
+        chain.doFilter(request, response);
+    }
+
+```
+
+### 实现自动登陆
+
+实体：
+
+```java
+public class User{
+    private String username ;
+    private String password;
+    public User() {
+    }
+    public User(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+  //各种setter和getter
+```
+
+集合模拟数据库
+
+```java
+  public class UserDB { 
+      private static List<User> users = new ArrayList<>() {
+      static {
+          users.add(new User("aaa", "123"));
+          users.add(new User("bbb", "123"));
+          users.add(new User("ccc", "123"));
+      }
+  
+      public static List<User> getUsers() {
+          return users;
+      }  
+      public static void setUsers(List<User> users) {
+          UserDB.users = users;
+      }
+  }
+```
+
+开发dao
+
+```java
+public User find(String username, String password) {
+
+  List<User> userList = UserDB.getUsers();
+
+  //遍历List集合，看看有没有对应的username和password
+  for (User user : userList) {
+    if (user.getUsername().equals(username) && user.getPassword().equals(password)) {
+      return user;
+    }
+  }
+  return null;
+}
+```
+
+界面
+
+```xml
+
+<form action="${pageContext.request.contextPath}/LoginServlet">
+
+    用户名<input type="text" name="username">
+    <br>
+    密码<input type="password" name="password">
+    <br>
+
+    <input type="radio" name="time" value="10">10分钟
+    <input type="radio" name="time" value="30">30分钟
+    <input type="radio" name="time" value="60">1小时
+    <br>
+
+    <input type="submit" value="登陆">
+
+</form>
+
+
+```
+
+Servlet：
+
+```java
+        //得到客户端发送过来的数据
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        
+        UserDao userDao = new UserDao();
+        User user = userDao.find(username, password);
+
+        if (user == null) {
+            request.setAttribute("message", "用户名或密码是错的！");
+            request.getRequestDispatcher("/message.jsp").forward(request, response);
+        }
+
+        //如果不是为空，那么在session中保存一个属性
+        request.getSession().setAttribute("user", user);
+        request.setAttribute("message", "恭喜你，已经登陆了！");
+        
+        //如果想要用户关闭了浏览器，还能登陆，就必须要用到Cookie技术了
+        Cookie cookie = new Cookie("autoLogin", user.getUsername() + "." + user.getPassword());
+
+        //设置Cookie的最大声明周期为用户指定的
+        cookie.setMaxAge(Integer.parseInt(request.getParameter("time")) * 60);
+        
+        //把Cookie返回给浏览器
+        response.addCookie(cookie);
+        
+        //跳转到提示页面
+        request.getRequestDispatcher("/message.jsp").forward(request, response);
+
+```
+
+过滤器：
+
+```java
+        HttpServletResponse response = (HttpServletResponse) resp;
+        HttpServletRequest request = (HttpServletRequest) req;
+        //如果用户没有关闭浏览器，就不需要Cookie做拼接登陆了
+        if (request.getSession().getAttribute("user") != null) {
+            chain.doFilter(request, response);
+            return;
+        }
+        //用户关闭了浏览器，session的值就获取不到了。所以要通过Cookie来自动登陆
+        Cookie[] cookies = request.getCookies();
+        String value = null;
+        for (int i = 0; cookies != null && i < cookies.length; i++) {
+            if (cookies[i].getName().equals("autoLogin")) {
+                value = cookies[i].getValue();
+            }
+        }
+        //得到Cookie的用户名和密码
+        if (value != null) {
+            String username = value.split("\\.")[0];
+            String password = value.split("\\.")[1];
+            UserDao userDao = new UserDao();
+            User user = userDao.find(username, password);
+            if (user != null) {
+                request.getSession().setAttribute("user", user);
+            }
+        }        
+        chain.doFilter(request, response);
+```
+
+效果：
+
+![img](02Filter.assets/16173eab4a3de6cf)
+
+#### 改良
+
+我们直接把用户名和密码都放在了Cookie中，这是明文的。懂点编程的人就会知道你的账号了。
+
+于是乎，我们要对密码进行加密！
+
+```java
+Cookie cookie = new Cookie("autoLogin", user.getUsername() + "." + md5.md5(user.getPassword()));
+```
+
+在过滤器中，加密后的密码就不是数据库中的密码的。所以，我们得**在Dao添加一个功能【根据用户名，找到用户】**
+
+```java
+    public User find(String username) {
+        List<User> userList = UserDB.getUsers();
+
+        //遍历List集合，看看有没有对应的username和password
+        for (User user : userList) {
+            if (user.getUsername().equals(username)) {
+                return user;
+            }
+        }
+
+        return null;
+    }
+
+```
+
+**在过滤器中，比较Cookie带过来的md5密码和在数据库中获得的密码（也经过md5）是否相同**
+
+```java
+        //得到Cookie的用户名和密码
+        if (value != null) {
+            String username = value.split("\\.")[0];
+            String password = value.split("\\.")[1];
+            //在Cookie拿到的密码是md5加密过的，不能直接与数据库中的密码比较
+            UserDao userDao = new UserDao();
+            User user = userDao.find(username);
+            //通过用户名获得用户信息，得到用户的密码，用户的密码也md5一把
+            String dbPassword = md5.md5(user.getPassword());
+            //如果两个密码匹配了，就是正确的密码了
+            if (password.equals(dbPassword)) {
+                request.getSession().setAttribute("user", user);
+            }
+        }
+```
+
+### 编码过滤器
+
+目的：**解决全站的乱码问题**
+
+过滤器
+
+```java
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+        //将request和response强转成http协议的
+        HttpServletRequest httpServletRequest = (HttpServletRequest) req;
+        HttpServletResponse httpServletResponse = (HttpServletResponse) resp;
+        httpServletRequest.setCharacterEncoding("UTF-8");
+        httpServletResponse.setCharacterEncoding("UTF-8");
+        httpServletResponse.setContentType("text/html;charset=UTF-8");        
+        chain.doFilter(httpServletRequest, httpServletResponse);
+    }
+```
+
+上面的过滤器是不完善的，因为**浏览器用get方式提交给服务器的中文数据，单单靠上面的过滤器是无法完成的！**
+
+那么我们需要怎么做呢？？我们之前解决get方式的乱码问题是这样的：**使用request获取传递过来的数据，经过ISO 8859-1反编码获取得到不是乱码的数据（传到Servlet上的数据已经被ISO 8859-1编码过了，反编码就可以获取原来的数据），再用UTF-8编码，得到中文数据！**
+
+**在Servlet获取浏览器以GET方式提交过来的中文是乱码的根本原因是：getParameter()方法是以ISO 8859-1的编码来获取浏览器传递过来的数据的，得到的是乱码**
+
+既然知道了根本原因，那也好办了：**过滤器传递的request对象，使用getParameter()方法的时候，获取得到的是正常的中文数据**
+
+也就是说，sun公司为我们提供的request对象是不够用的，**因为sun公司提供的request对象使用getParameter()获取get方式提交过来的数据是乱码，于是我们要增强request对象（使得getParameter()获取得到的是中文）！**
+
+#### 增强request对象
+
+**增强request对象，我们可以使用包装设计模式！**
+
+包装设计模式的五个步骤：
+
+- **1、实现与被增强对象相同的接口** 
+- **2、定义一个变量记住被增强对象**
+- **3、定义一个构造器，接收被增强对象**
+- **4、覆盖需要增强的方法**
+- **5、对于不想增强的方法，直接调用被增强对象（目标对象）的方法**
+
+sun公司也知道我们可能对request对象的方法不满意，于是提供了HttpServletRequestWrapper类给我们实现（如果实现HttpServletRequest接口的话，要实现太多的方法了！）
+
+```java
+  class MyRequest extends HttpServletRequestWrapper {
+      private HttpServletRequest request;
+  
+      public MyRequest(HttpServletRequest request) {
+          super(request);
+          this.request = request;
+      }
+  
+      @Override
+      public String getParameter(String name) {
+          String value = this.request.getParameter(name);
+  
+          if (value == null) {
+              return null;
+          }
+  
+          //如果不是get方法的，直接返回就行了
+          if (!this.request.getMethod().equalsIgnoreCase("get")) {
+              return null;
+          }
+  
+          try {
+              //进来了就说明是get方法，把乱码的数据
+              value = new String(value.getBytes("ISO8859-1"), this.request.getCharacterEncoding());
+              return value ;
+  
+          } catch (UnsupportedEncodingException e) {
+              e.printStackTrace();
+  
+              throw new RuntimeException("不支持该编码");
+          }  
+      }
+  }
+
+```
+
+**将被增强的request对象传递给目标资源，那么目标资源使用request调用getParameter()方法的时候，获取得到的就是中文数据，而不是乱码了！**
+
+```java
+//将request和response强转成http协议的
+HttpServletRequest httpServletRequest = (HttpServletRequest) req;
+HttpServletResponse httpServletResponse = (HttpServletResponse) resp;
+
+httpServletRequest.setCharacterEncoding("UTF-8");
+httpServletResponse.setCharacterEncoding("UTF-8");
+httpServletResponse.setContentType("text/html;charset=UTF-8");
+
+MyRequest myRequest = new MyRequest(httpServletRequest);
+
+//传递给目标资源的request是被增强后的。
+chain.doFilter(myRequest, httpServletResponse);
+```
+
+使用get方式传递中文数据给服务器
+
+```
+<form action="${pageContext.request.contextPath}/Servlet1" method="get">
+    <input type="hidden" name="username" value="中国">    
+    <input type="submit" value="提交">
+</form>
+```
+
+### 敏感词的过滤器
+
+**如果用户输入了敏感词（傻b、尼玛、操蛋等等不文明语言时），我们要将这些不文明用于屏蔽掉，替换成符号！**
+
+要实现这样的功能也很简单，用户输入的敏感词肯定是在`getParameter()`获取的，我们在getParameter()得到这些数据的时候，判断有没有敏感词汇，如果有就替换掉就好了！简单来说：也是要增强request对象
+
+增强request对象
+
+```java
+  class MyDirtyRequest extends HttpServletRequestWrapper {
+      HttpServletRequest request;  
+      //定义一堆敏感词汇
+      private List<String> list = Arrays.asList("傻b", "尼玛", "操蛋");  
+      public MyDirtyRequest(HttpServletRequest request) {
+          super(request);
+          this.request = request;
+      } 
+      @Override
+      public String getParameter(String name) {  
+          String value = this.request.getParameter(name); 
+          if (value == null) {
+              return null;
+          }  
+          //遍历list集合，看看获取得到的数据有没有敏感词汇
+          for (String s : list) {  
+              if (s.equals(value)) {
+                  value = "*****";
+              }
+          }  
+          return value ;
+      }
+  }
+
+```
+
+开发过滤器:
+
+```java
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+        //将request和response强转成http协议的
+        HttpServletRequest httpServletRequest = (HttpServletRequest) req;
+        HttpServletResponse httpServletResponse = (HttpServletResponse) resp;
+
+        MyDirtyRequest dirtyRequest = new MyDirtyRequest(httpServletRequest);
+
+        //传送给目标资源的是被增强后的request对象
+        chain.doFilter(dirtyRequest, httpServletResponse);
+    }
+
+```
+
+------
+
+### 压缩资源过滤器
+
+按照过滤器的执行顺序：**执行完目标资源，过滤器后面的代码还会执行。所以，我们在过滤器中可以获取执行完目标资源后的response对象！**
+
+**我们知道sun公司提供的response对象调用write()方法，是直接把数据返回给浏览器的**。我们要想实现压缩的功能，**write()方法就不能直接把数据写到浏览器上！**
+
+这和上面是类似的，**过滤器传递给目标资源的response对象就需要被我们增强，使得目标资源调用writer()方法的时候不把数据直接写到浏览器上**！
+
+**response对象可能会使用PrintWriter或者ServletOutputStream对象来调用writer()方法的，所以我们增强response对象的时候，需要把getOutputSteam和getWriter()重写**
+
+```java
+  
+  class MyResponse extends HttpServletResponseWrapper{ 
+      HttpServletResponse response;
+      public MyResponse(HttpServletResponse response) {
+          super(response);
+          this.response = response;
+      }   
+      @Override
+      public ServletOutputStream getOutputStream() throws IOException {
+          return super.getOutputStream();
+      }
+      @Override
+      public PrintWriter getWriter() throws IOException {
+          return super.getWriter();
+      }
+  }
+```
+
+接下来，**ServletOutputSteam要调用writer()方法，使得它不会把数据写到浏览器上。这又要我们增强一遍了！**
+
+```java
+  /*增强ServletOutputSteam，让writer方法不把数据直接返回给浏览器*/
+  class MyServletOutputStream extends ServletOutputStream{  
+      private ByteArrayOutputStream byteArrayOutputStream;  
+      public MyServletOutputStream(ByteArrayOutputStream byteArrayOutputStream) {
+          this.byteArrayOutputStream = byteArrayOutputStream;
+      }  
+      //当调用write()方法的时候，其实是把数据写byteArrayOutputSteam上
+      @Override
+      public void write(int b) throws IOException {
+          this.byteArrayOutputStream.write(b); 
+      }
+  }
+```
+
+PrintWriter对象就好办了，它**本来就是一个包装类，看它的构造方法，我们直接可以把ByteArrayOutputSteam传递给PrintWriter上。**
+
+![这里写图片描述](02Filter.assets/161758ab30d8d0dc)
+
+```java
+    @Override
+    public PrintWriter getWriter() throws IOException {
+        printWriter = new PrintWriter(new OutputStreamWriter(byteArrayOutputStream, this.response.getCharacterEncoding()));
+        return printWriter;
+    }
+```
+
+**我们把数据都写在了ByteArrayOutputSteam上了，应该提供方法给外界过去缓存中的数据！**
+
+```java
+    public byte[] getBuffer() {
+        try {
+            //防止数据在缓存中，要刷新一下！
+            if (printWriter != null) {
+                printWriter.close();
+            }
+            if (byteArrayOutputStream != null) {
+                byteArrayOutputStream.flush();
+                return byteArrayOutputStream.toByteArray();
+            }            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+```
+
+增强response的完整代码
+
+```java
+class MyResponse extends HttpServletResponseWrapper{
+    private ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    private PrintWriter printWriter ;
+    private HttpServletResponse response;
+    public MyResponse(HttpServletResponse response) {
+        super(response);
+        this.response = response;
+    }
+    @Override
+    public ServletOutputStream getOutputStream() throws IOException {
+        //这个的ServletOutputSteam对象调用write()方法的时候，把数据是写在byteArrayOutputSteam上的
+        return new MyServletOutputStream(byteArrayOutputStream);
+    }
+    @Override
+    public PrintWriter getWriter() throws IOException {
+        printWriter = new PrintWriter(new OutputStreamWriter(byteArrayOutputStream, this.response.getCharacterEncoding()));
+        return printWriter;
+    }
+    public byte[] getBuffer() {
+        try {
+            //防止数据在缓存中，要刷新一下！
+            if (printWriter != null) {
+                printWriter.close();
+            }
+            if (byteArrayOutputStream != null) {
+                byteArrayOutputStream.flush();
+                return byteArrayOutputStream.toByteArray();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
+
+```
+
+过滤器:
+
+```java
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) resp;
+        MyResponse myResponse = new MyResponse(response);
+        //把被增强的response对象传递进去，目标资源调用write()方法的时候就不会直接把数据写在浏览器上了
+        chain.doFilter(request, myResponse);
+        //得到目标资源想要返回给浏览器的数据
+        byte[] bytes = myResponse.getBuffer();
+        //输出原来的大小
+        System.out.println("压缩前："+bytes.length);      
+        //使用GZIP来压缩资源，再返回给浏览器
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream);
+        gzipOutputStream.write(bytes);     
+        //得到压缩后的数据
+        byte[] gzip = byteArrayOutputStream.toByteArray();     
+        System.out.println("压缩后：" + gzip.length);       
+        //还要设置头，告诉浏览器，这是压缩数据！
+        response.setHeader("content-encoding", "gzip");
+        response.setContentLength(gzip.length);
+        response.getOutputStream().write(gzip);     
+    }
+```
+
+### 缓存数据到内存中
+
+**让浏览器不缓存数据，而将数据缓存到内存中【如果某个资源重复使用，不轻易变化，应该缓存到内存中】**
+
+这个和压缩数据的Filter非常类似的，因为**让数据不直接输出给浏览器，把数据用一个容器（ByteArrayOutputSteam）存起来。如果已经有缓存了，就取缓存的。没有缓存就执行目标资源！**
+
+- 增强response对象
+
+```java
+class MyResponse extends HttpServletResponseWrapper {
+
+    private ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+    private PrintWriter printWriter ;
+    private HttpServletResponse response;
+    public MyResponse(HttpServletResponse response) {
+        super(response);
+        this.response = response;
+    }
+
+    @Override
+    public ServletOutputStream getOutputStream() throws IOException {
+        //这个的ServletOutputSteam对象调用write()方法的时候，把数据是写在byteArrayOutputSteam上的
+        return new MyServletOutputStream(byteArrayOutputStream);
+    }
+
+    @Override
+    public PrintWriter getWriter() throws IOException {
+        printWriter = new PrintWriter(new OutputStreamWriter(byteArrayOutputStream, this.response.getCharacterEncoding()));
+
+        return printWriter;
+    }
+
+    public byte[] getBuffer() {
+
+        try {
+
+            //防止数据在缓存中，要刷新一下！
+            if (printWriter != null) {
+                printWriter.close();
+            }
+            if (byteArrayOutputStream != null) {
+                byteArrayOutputStream.flush();
+                return byteArrayOutputStream.toByteArray();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
+
+
+//增强ServletOutputSteam，让writer方法不把数据直接返回给浏览器
+
+class MyServletOutputStream extends ServletOutputStream {
+
+    private ByteArrayOutputStream byteArrayOutputStream;
+
+    public MyServletOutputStream(ByteArrayOutputStream byteArrayOutputStream) {
+        this.byteArrayOutputStream = byteArrayOutputStream;
+    }
+
+    //当调用write()方法的时候，其实是把数据写byteArrayOutputSteam上
+    @Override
+    public void write(int b) throws IOException {
+        this.byteArrayOutputStream.write(b);
+
+    }
+}
+
+```
+
+过滤器
+
+```java
+public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws ServletException, IOException {
+
+        //定义一个Map集合，key为页面的地址，value为内存的缓存
+        Map<String, byte[]> map = new HashMap<>();
+
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) resp;
+
+        //得到客户端想要请求的资源
+        String uri = request.getRequestURI();
+        byte[] bytes = map.get(uri);
+
+        //如果有缓存，直接返回给浏览器就行了，就不用执行目标资源了
+        if (bytes != null) {
+            response.getOutputStream().write(bytes);
+            return ;
+        }
+
+        //如果没有缓存，就让目标执行
+        MyResponse myResponse = new MyResponse(response);
+        chain.doFilter(request, myResponse);
+        //得到目标资源想要发送给浏览器的数据
+        byte[] b = myResponse.getBuffer();
+        //把数据存到集合中
+        map.put(uri, b);
+        //把数据返回给浏览器
+        response.getOutputStream().write(b);
+    }
+```
+
+**尽管是刷新，获取得到的也是从缓存拿到的数据！**

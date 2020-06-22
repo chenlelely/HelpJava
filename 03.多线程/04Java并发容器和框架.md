@@ -1,9 +1,43 @@
 # 4 Java并发容器和框架
 
-同步容器类都是线程安全的， 但在某些情况下可能需要额外的客户端加锁来保护复合操作。
-容器上常见的复合操作包括： 迭代， 跳跃， 以及条件运算。  
+## 4.0 同步容器的问题
 
-## 4.1 concurrent包的实现
+同步容器通过synchronized关键字修饰容器保证同一时刻内只有一个线程在使用容器，从而使得容器线程安全。synchronized的意思是同步，它体现在将多线程变为串行等待执行。
+
+- List list = Collections.synchronizedList(new ArrayList());
+- Set set = Collections.synchronizedSet(new HashSet());
+- Map map = Collections.synchronizedMap(new HashMap());
+
+同步容器类都是线程安全的， 但在某些情况下可能需要额外的客户端加锁来保证复合操作的安全性。容器上常见的复合操作包括： 迭代， 跳跃， 以及条件运算。  
+
+```java
+public class EnhancedMap<K,V>{
+	Map<K,V>map;
+	public EnhancedMap(Map<K,V> map){
+		this.map=Collections.synchronizedMap(map);
+    }
+	public V putIfAbsent(K key,V value){
+		V old=map.get(key);
+		if(old!=nul1) return old;
+		return map.put(key,value);
+    }	
+	public V put(K key,V value){
+		return map.put(key,value);
+    }
+}
+```
+
+> 复合操作：复合方法putIfAbsent是安全的吗？显然是否定的，这是一个检查然后再更新的复合操作
+
+> 伪同步：给putIfAbsent方法加上synchronized就能实现安全吗？`public synchronized V putIfAbsent(K key,V value)`
+>
+> 不安全；因为同步错对象了。修改后，putIfAbsent使用EnhancedMap对象作为同步锁，而其他方法（如代码中的put方法）使用的是Collections.synchronizedMap返回的对象map，两者是不同的对象。因此方法内可以使用`synchronized(map){}`加锁
+
+> 迭代：如果在遍历的同时容器发生了结构性变化，就会抛出ConcurrentModificationException异常。同步容器并没有解决这个问题，如果要避免这个异常，需要在遍历的时候给整个容器对象加锁
+
+> 性能：同步容器的性能也是比较低的，当并发访问量比较大的时候性能比较差。
+
+## 4.1 并发容器-concurrent包的实现
 
 由于Java的CAS同时具有volatile读和volatile写的内存语义，因此Java线程之间的通信现在有了下面4种方式。
 1）A线程写volatile变量，随后B线程读这个volatile变量。
@@ -26,15 +60,26 @@
 ## 4.1 ConcurrentHashMap的实现原理与使用
 【基于1.8】https://juejin.im/post/5aeeaba8f265da0b9d781d16
 
+-----
+
+### 基于Java1.7
+
+java7中主要技术：
+
+- **分段锁**
+- **读不加锁**
+
 在多线程环境下，使用HashMap进行put操作会引起死循环，是**因为多线程会导致HashMap的Entry链表形成环形数据结构，一旦形成环形数据结构，Entry的next节点永远不为空，就会产生死循环获取Entry**。
 
 ConcurrentHashMap所使用的**锁分段技术（1.7)**：首先将数据分成一段一段地存储，然后给每一段数据配一把锁，当一个线程占用锁访问其中一个段数据的时候，其他段的数据也能被其他线程访问。
 
-ConcurrentHashMap是由**Segment数组结构**和**HashEntry数组结构**组成。Segment是一种**可重入锁**（ReentrantLock），在ConcurrentHashMap里**扮演锁的角色**；HashEntry则用于**存储键值对数据**。一个ConcurrentHashMap里包含一个Segment数组。Segment的结构和HashMap类似，是一种**数组和链表结构**。一个Segment里**包含一个HashEntry数组**，每个**HashEntry是一个链表结构的元素**，每个Segment守护着一个HashEntry数组里的元素，当对HashEntry数组的数据进行修改时，必须首先获得与它对应的Segment锁。
+- ConcurrentHashMap是由**Segment数组结构**和**HashEntry数组结构**组成。Segment是一种**可重入锁**（ReentrantLock），在ConcurrentHashMap里**扮演锁的角色**；HashEntry则用于**存储键值对数据**。一个ConcurrentHashMap里包含一个Segment数组。
 
-segments数组的长度size是通过concurrencyLevel计算得出的。为了能通过按位与的散列算法来定位segments数组的索引，必须保证segments数组的长度是**2的N次方**
+- Segment的结构和HashMap类似，是一种**数组和链表结构**。一个Segment里**包含一个HashEntry数组**，每个**HashEntry是一个链表结构的元素**，每个Segment守护着一个HashEntry数组里的元素，当对HashEntry数组的数据进行修改时，必须首先获得与它对应的Segment锁。
 
-segment的容量threshold＝（int）cap*loadFactor，默认情况下initialCapacity等于`16`，loadfactor等于`0.75`
+- segments数组的长度size是通过concurrencyLevel计算得出的。为了能通过按位与的散列算法来定位segments数组的索引，必须保证segments数组的长度是**2的N次方**
+
+- segment的容量threshold＝（int）cap*loadFactor，默认情况下initialCapacity等于`16`，loadfactor等于`0.75`
 
 ###  ConcurrentHashMap的操作
 #### 1.get操作
@@ -95,16 +140,18 @@ ConcurrentLinkedQueue 内部的队列使用单向链表方式实现，其中有*
 两个附加操作提供了4种处理方式：
 ![img](Untitled.assets/20190807221401187.png)
 
-1.ArrayBlockingQueue
-ArrayBlockingQueue是一个用数组实现的有界阻塞队列。此队列按照先进先出（FIFO）的原则对元素进行排序。默认情况下不保证线程公平的访问队列
-2.LinkedBlockingQueue
-LinkedBlockingQueue是一个用链表实现的有界阻塞队列。此队列的默认和最大长度为Integer.MAX_VALUE。此队列按照先进先出的原则对元素进行排序。
-3.PriorityBlockingQueue
-PriorityBlockingQueue是一个支持优先级的无界阻塞队列。默认情况下元素采取自然顺序升序排列。也可以自定义类实现compareTo()方法来指定元素排序规则
-4.DelayQueue
-DelayQueue是一个支持延时获取元素的无界阻塞队列。队列使用PriorityQueue来实现。队列中的元素必须实现Delayed接口，在创建元素时可以指定多久才能从队列中获取当前元素。只有在延迟期满时才能从队列中提取元素。
-5.SynchronousQueue
-SynchronousQueue是一个不存储元素的阻塞队列。每一个put操作必须等待一个take操作，否则不能继续添加元素。它支持公平访问队列。默认情况下线程采用非公平性策略访问队列。
+1. 无锁非阻塞并发队列：ConcurrentLinkedQueue和ConcurrentLinkedDeque。
+2. 普通阻塞队列：基于数组的ArrayBlockingQueue，基于链表的LinkedBlockingQueue和LinkedBlockingDeque。
+   1. ArrayBlockingQueue是一个用数组实现的有界阻塞队列。此队列按照先进先出（FIFO）的原则对元素进行排序。默认情况下不保证线程公平的访问队列
+   2. LinkedBlockingQueue是一个用链表实现的有界阻塞队列。此队列的默认和最大长度为Integer.MAX_VALUE。此队列按照先进先出的原则对元素进行排序。
+3. 优先级阻塞队列：PriorityBlockingQueue。
+   1. PriorityBlockingQueue是一个支持优先级的无界阻塞队列。默认情况下元素采取自然顺序升序排列。也可以自定义类实现compareTo()方法来指定元素排序规则
+4. 延时阻塞队列：DelayQueue。
+   1. DelayQueue是一个支持延时获取元素的无界阻塞队列。队列使用PriorityQueue来实现。队列中的元素必须实现Delayed接口，在创建元素时可以指定多久才能从队列中获取当前元素。只有在延迟期满时才能从队列中提取元素。
+5. 其他阻塞队列：SynchronousQueue和LinkedTransferQueue。
+   1. SynchronousQueue是一个不存储元素的阻塞队列。每一个put操作必须等待一个take操作，否则不能继续添加元素。它支持公平访问队列。默认情况下线程采用非公平性策略访问队列。
+
+> 无锁非阻塞是指，这些队列不使用锁，所有操作总是可以立即执行，主要通过循环CAS实现并发安全。阻塞队列是指，这些队列使用锁和条件，很多操作都需要先获取锁或满足特定条件，获取不到锁或等待条件时，会等待（即阻塞），获取到锁或条件满足再返回。
 
 ###  阻塞队列的实现原理
 使用**通知模式**实现。所谓通知模式，就是当生产者往满的队列里添加元素时会阻塞住生产者，当消费者消费了一个队列中的元素后，会通知生产者当前队列可用。
@@ -225,20 +272,28 @@ private final Condition notFull = putLock.newCondition();
 不同点：1. ArrayBlockingQueue底层是采用的数组进行实现，而LinkedBlockingQueue则是采用链表数据结构； 2. ArrayBlockingQueue插入和删除数据，只采用了一个lock，而LinkedBlockingQueue则是在插入和删除分别采用了putLock和takeLock，<u>这样可以降低线程由于线程无法获取到lock而进入WAITING状态的可能性，从而提高了线程并发执行的效率。</u>
 ## 4.4 CopyOnWriteArrayList解读
 https://juejin.im/post/5aeeb55f5188256715478c21 
+
+CopyOnWriteArrayList的特点如下：
+
+- 它是线程安全的，可以被多个线程并发访问；
+- 它的迭代器不支持修改操作，但也不会抛出ConcurrentModificationException；
+- 它以原子方式支持一些复合操作。
+
 由于读操作根本不会修改原有的数据，因此对于每次读取都进行加锁其实是一种资源 浪费。我们应该允许多个线程同时访问List的内部数据，毕竟读取操作是安全的。根据读写锁的思想，读锁和读锁之间确实也不冲突。但是，读操作会受到写操作的阻碍，当写发 生时，读就必须等待，否则可能读到不一致的数据。同理，当读操作正在进行时，程序也 不能进行写入。
+
 为了将读取的性能发挥到极致，JDK中提供了CopyOnWriteArrayList类。对它来说， **读取是完全不用加锁的**，并且更好的消息是：**写入也不会阻塞读取操作**。**只有写入和写入 之间需要进行同步等待**。这样，读操作的性能就会大幅度提升。
 
- CopyOnWrite就是在写入操作时，进行一次**自我 复制**。换句话说，当这个List需要修改时，我并不修改原有的内容（这对于保证当前在读 线程的数据一致性非常重要），而是对原有的数据进行一次复制，将修改的内容写入副本 中。写完之后，再用修改完的副本替换原来的数据，这样就可以保证写操作不会影响读了。
+ CopyOnWrite就是在写入操作时，进行一次**自我 复制**。换句话说，当这个List需要修改时，我并不修改原有的内容（这对于**保证当前在读** 线程的数据一致性非常重要），而是**对原有的数据进行一次复制，将修改的内容写入副本 中。写完之后，再用修改完的副本替换原来的数据，这样就可以保证写操作不会影响读了**。
 <img src="Untitled.assets/20190911112120675.png" alt="img" style="zoom: 67%;" />
 
 每个 CopyOnWriteArrayList 对象里面有一个**volatile修饰的array 数组对象**用来存放具体元素（这里仅仅是修饰的是数组引用）， **ReentrantLock 独占锁对 象**用来保证同一时刻只有一个写线程正在进行数组的复制 。
 
 CopyOnWriteArrayList 中迭代器的弱一致性是怎么回事 ， 所谓弱一致性是指返回迭代器后，其他线程对 list 的增删改对迭代器是不可见的 。
 
-**当调用 iterator() 方法获取法代器时实 际上会返 回 一个 COWiterator 对象 ， COWiterator 对象 的 snapshot 变量保存了当 前 list 的内 容 ， cursor 是遍历 list 时数据 的下标。**
-为什么说 snapshot 是 list 的 快照呢？明明是指针传递 的引用啊，而不是副本。 如果在该线程使用 返回 的法代器遍历元素 的过程 中， 其他线程没有对 list 进行增删 改，那么snapshot 本 身就是 list 的 array ， 因 为它 们 是 引 用关系。但是**如果在遍历期间 其他线程对 该list 进行了 增删 改 ，那么 snapshot 就是快照了，因为增删 改后 list 里面的 数组被新数组替 换 了 ，这时候老数组被 snapshot 引用** 。这也说明获取迭代器后 ， 使用 该法代器元素时， 其他线程对该 list 进行的增删改不可见，因为它们操作的是两个不同的数组 ， 这就是**弱一致性** 。
+- **当调用 iterator() 方法获取法代器时实 际上会返 回 一个 COWiterator 对象 ， COWiterator 对象 的 snapshot 变量保存了当 前 list 的内 容 ， cursor 是遍历 list 时数据 的下标。**
+- 为什么说 snapshot 是 list 的 快照呢？明明是指针传递 的引用，而不是副本啊。 如果在该线程使用 返回 的迭代器遍历元素 的过程 中， 其他线程**没有对 list 进行增删 改，那么snapshot 本 身就是 list 的 array** ， 因 为它 们 是 引 用关系。但是**如果在遍历期间 其他线程对 该list 进行了 增删 改 ，那么 snapshot 就是快照了，因为增删 改后 list 里面的 数组被新数组替 换 了 ，这时候老数组被 snapshot 引用** 。这也说明获取迭代器后 ， 使用 该法代器元素时， 其他线程对该 list 进行的增删改不可见，因为它们操作的是两个不同的数组 ， 这就是**弱一致性** 。
 
-CopyOnWriteArrayList 使用**写时复制的策略**来保证 list 的一致性，而获取一修改一写入三步操作并不是原子性的，所以在增删改的过程中都使用了独占锁，来保证在某个时间只有一个线程能对 list 数组进行修改 。 另外 CopyOnWriteAn·ayList 提供了弱 一致性的法代器 ， 从而保证在获取迭代器后，其他线程对 list 的修改是不可见的， 迭代器遍历的数组是一个快照 。 另外， CopyOnWriteArraySet 的底层就是使用它实现的
+CopyOnWriteArrayList 使用**写时复制的策略**来保证 list 的一致性，而**获取一修改一写入**三步操作并不是原子性的，所以在增删改的过程中都使用了独占锁，来保证在某个时间只有一个线程能对 list 数组进行修改 。 另外 CopyOnWriteAn·ayList 提供了弱 一致性的迭代器 ， 从而保证在获取迭代器后，其他线程对 list 的修改是不可见的， 迭代器遍历的数组是一个快照 。 另外， CopyOnWriteArraySet 的底层就是使用它实现的
 ## 4.5 并发容器之ThreadLocal
 https://juejin.im/post/5aeeb22e6fb9a07aa213404a
 ### set（T value）

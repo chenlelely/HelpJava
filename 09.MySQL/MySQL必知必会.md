@@ -1,8 +1,102 @@
-# 数据库基础
+`《MySQL必知必会》-Ben Forta
+
+- 《精通MySQL8》-
+
+# MySQL数据库基础
+
+数据库（Database），就是按照数据结构来组织、存储和管理数据，建立在计算机存储设备上的仓库。
+
+数据表是包含数据库中所有数据的数据库对象。在关系型数据库中，数据在表中的组织方式与在电子表格中相似，都是按行和列的格式组织的。其中每一行代表一条唯一的记录，每一列代表记录中的一个字段，。表中的数据库对象包含列、索引和触发器
+
+- （1）列，也称为栏位（Column）：属性列，创建表时，必须指定列的名字和数据类型。
+- （2）索引（Index）：根据指定的数据库表列建立起来的顺序，提供了快速访问数据的途径且可监督表的数据，使其索引指向的列中的数据不重复。
+- （3）触发器（Trigger）：用户定义的事务命令的集合，当对一个表中的数据进行插入、更新或删除时，这组命令就会自动执行，可以用来确保数据的完整性和安全性。
+
+---
+
+**标准化和规范化**
+
+关于数据表的设计，有三个范式要遵循。
+
+1. 第一范式（1NF），确保**每列保持原子性**。数据库的每一列都是不可分割的原子数据项，而不能是集合、数组、记录等非原子数据项。
+2. 第二范式（2NF），确保**每列都和主键相关**。满足第一范式（2NF）必须先满足第一范式（1NF），第二范式（2NF）要求实体的属性完全依赖主关键字。如果存在不完全依赖，那么这个属性和主关键字的这一部分应该分离出来形成一个新的实体，新实体与元实体之间是一对多的关系。
+3. 第三范式（3NF）确保**每列都和主键列直接相关，而不是间接相关**。满足第三范式（3NF）必须先满足第二范式（2NF），要求一个关系中不包含已在其他关系已包含的非主关键字信息。
+
+数据的标准化有助于消除数据库中的数据冗余，第三范式（3NF）通常被认为在性能、扩展性和数据完整性方面达到了最好的平衡，遵守3NF的数据表只包括其本身基本的属性，当不是它们本身所具有的属性时，就需要进行分解，表和表之间的关系通过**外键**相连接，**有一组表专门存放通过键连接起来的关联数据**。
+
+-----
+
+**表和表的关系**
+
+数据库里表和表的关系有三种：一对一、一对多、多对多。
+
+- 一对一，主表和相关联的表之间是一一对应的，比如说，我们新建一个学生基本信息表t_student，然后新建一个成绩表，里面有个外键stuID，学生基本信息表里的字段stuID和成绩表里的stuID就是一一对应的。
+- 一对多，比如说，我们新建一个班级表，而每个班级都有多个学生，每个学生则对应一个班级，班级对学生就是一对多的关系。
+- 多对多，比如我们新建一个选课表，可能有许多科目，每个科目有很多学生选，而每个学生又可以选择多个科目，这就是多对多的关系。
+
+## 数据库的数据类型
+
+**整数类型**
+
+![image-20200507120528425](MySQL必知必会.assets/image-20200507120528425.png)
+
+----
+
+**浮点数类型和定点数类型**
+
+数据表中用浮点数类型和定点数类型来表示小数。
+
+浮点数类型包括单精度浮点数（FLOAT型）和双精度浮点数（DOUBLE型）。
+
+定点数类型就是DECIMAL型。
+
+![image-20200507120850490](MySQL必知必会.assets/image-20200507120850490.png)
+
+> DECIMAL型的取值范围与DOUBLE相同，但是DECIMAL的有效值范围由M和D决定；而且DECIMAL型的字节数是M+2，也就是说，定点数的存储空间是根据其精度决定的。
+>
+> FLOAT、DOUBLE数据类型存储数据时存储的是近似值，DECIMAL存储的是字符串，因此提供了更高的精度。在金融系统中，表示货币金额的时候，会优先考虑DECIMAL数据类型；在一般的价格体系中，比如购物平台中货品的标价，一般选择FLOAT类型就可以。
+
+----
+
+**日期与时间类型**
+
+日期与时间类型是为了方便在数据库中存储日期和时间而设计的，数据库有多种表示日期和时间的数据类型。其中，YEAR类型表示年，DATE类型表示日期，TIME类型表示时间，DATETIME和TIMESTAMP表示日期和时间。
+
+![image-20200507121147329](MySQL必知必会.assets/image-20200507121147329.png)
+
+--------
+
+**字符串类型**
+
+字符串类型是在数据库中存储字符串的数据类型。字符串类型包括CHAR、VARCHAR、BLOB、TEXT、ENUM和SET。
+
+1. CHAR类型和VARCHAR类型：CHAR类型和VARCHAR类型都在创建表时指定了最大长度
+   1. CHAR类型的**长度是固定的**，在创建表时就指定了。其长度可以是0~255的任意值。
+   2. VARCHAR类型的**长度是可变的**，在创建表时指定了最大长度。定义时，其最大值可以取0~65535之间的任意值。
+
+2. TEXT类型：TEXT类型是一种特殊的字符串类型，包括TINYTEXT、TEXT、MEDIUMTEXT和LONGTEXT
+3. ENUM类型：又称为枚举类型。在创建表时，ENUM类型的取值范围以列表的形式指定
+4.  SET类型：在创建表时，SET类型的取值范围就以列表的形式指定了
+
+---
+
+**二进制类型**
+
+二进制类型是存储二进制数据的数据类型，包括BINARY、VARBINARY、BIT、TINYBLOB、BLOB、MEDIUMBLOB和LONGBLOB。
+
+![image-20200507121811958](MySQL必知必会.assets/image-20200507121811958.png)
+
+---
+
+**JSON类型**
+
+JSON是一种轻量级的数据交换格式。相比格式化JSON以字符串形式存储在数据库中，使用JSON类型有如下好处：（1）对存储在JSON列的JSON文档进行原子化验证；（2）优化存储格式。
 
 
 
-# 使用MySQL
+
+
+# 数据库操作
 
 **结束SQL语句**: 多条SQL语句必须以分号（;）分隔。
 
@@ -18,11 +112,13 @@
 
 `SHOW DATABASES；`返回可用数据库的一个列表。包含在这个列表中的可能是MySQL内部使用的数据库
 
+`DROP DATABASE dataSource;`删除dataSource数据库
+
 `SHOW TABLES;`返回当前选择的数据库内可用表的列表
 
 `show columns from city;`显示city表中的表列；它对每个字段返回一行，行中包含字段名、数据类型、是否允许NULL、键信息、默认值以及其他信息
 
-- DESCRIBE语句：MySQL支持用DESCRIBE作为·`SHOW COLUMNS FROM`的一种快捷方式。换句话说，`DESCRIBE customers；`是`SHOW COLUMNS FROM customers；`的一种快捷方式。
+- ·`DESCRIBE`语句：MySQL支持用DESCRIBE作为·`SHOW COLUMNS FROM`的一种快捷方式。换句话说，`DESCRIBE customers；`是`SHOW COLUMNS FROM customers；`的一种快捷方式。
 
 所支持的其他SHOW语句还有：
 
@@ -30,6 +126,28 @@
 - `SHOW CREATE DATABASE`和`SHOW CREATE TABLE`，分别用来显示创建特定数据库或表的MySQL语句；
 - `SHOW GRANTS`，用来显示授予用户（所有用户或特定用户）的安全权限；
 - `SHOW ERRORS`和`SHOW WARNINGS`，用来显示服务器错误或警告消息。
+
+----
+
+**什么是存储引擎**
+
+简单说存储引擎就是指表的类型，即如何存储和索引数据、是否支持事务等，同时存储引擎也决定了表在计算机中的存储方式。
+
+`SHOW ENGINES;`查看支持的存储引擎
+
+`SHOW VARIABLES like 'default_storage_engine';`查询默认存储引擎
+
+如果想修改MySQL的默认存储引擎，可以通过修改MySQL数据库管理系统的my.cnf或者my.ini文件的配置来实现，或者`SET DEFAULT_STORAGE_ENGINE=MyISM`
+
+# 数据查询
+
+```mysql
+SELECT fieldl, field2,…,fieldn
+FROM tablename
+[WHERE CONDITION1]
+[GROUP BY fieldm [HAVING CONDITION2]]
+[ORDER BY fieldn [ASC|DESC]]
+```
 
 ## 检索数据select
 
@@ -123,6 +241,10 @@
 
 `SELECT prod_ name,prod_price FROM products WHERE vend_id NOT IN (1002,1003) ORDER BY prod_name;`
 
+> 在具体使用关键字IN时，查询的集合中如果存在NULL，则不会影响查询；
+>
+> 使用关键字NOT IN，查询的集合中如果存在NULL，则不会有任何的查询结果。
+
 ### 使用通配符过滤LIKE
 
 > **通配符（wildcard）** 用来匹配值的一部分的特殊字符。
@@ -133,9 +255,9 @@
 >
 > like是全值匹配
 
-- %通配符
+- `%`通配符--任意字符串
 
-> 在搜索串中，%表示任何字符出现任意次数；除了一个或多个字符外，%还能匹配0个字符。%代表搜索模式中给定位置的0个、1个或多个字符。
+> 在搜索串中，%表示**任何字符出现任意次数**；除了一个或多个字符外，%还能匹配0个字符。%代表搜索模式中给定位置的**0个、1个或多个字符**。
 
 `SELECT prod_id,prod_name FROM products WHERE prod_name LIKE 'jet%';`%告诉MySQL接受jet之后的任意字符，不管它有多少字符。
 
@@ -147,9 +269,9 @@
 
 > **注意NULL** 虽然似乎%通配符可以匹配任何东西，但有一个例外，即NULL。即使是WHERE prod_name LIKE '%’也不能匹配用值NULL作为产品名的行。
 
-- 下划线_通配符
+- 下划线`_`通配符--单个字符
 
-> 下划线的用途与%一样，但下划线只匹配单个字符，不能多也不能少
+> 下划线的用途与%一样，但下划线**只匹配单个字符**，不能多也不能少
 
 `SELECT prod_id,prod_name FROM products WHERE prod_name LIKE'_ ton anvil';`匹配如“1 ton anvil”
 
@@ -173,8 +295,8 @@
 >
 > 如果执行上述两条语句，会发现第一条语句不返回数据，而第二条语句返回一行。
 >
-> - 因为LIKE匹配整个列。如果被匹配的文本在列值中出现，LIKE将不会找到它，相应的行也不被返回（除非使用通配符）。
-> - REGEXP在列值内进行匹配，如果被匹配的文本在列值中出现，REGEXP将会找到它，相应的行将被返回。
+> - **因为LIKE匹配整个列**。如果被匹配的文本在列值中出现，LIKE将不会找到它，相应的行也不被返回（除非使用通配符）。
+> - **REGEXP在列值内进行匹配**，如果被匹配的文本在列值中出现，REGEXP将会找到它，相应的行将被返回。
 >
 > 这是一个非常重要的差别。那么，REGEXP能不能用来匹配整个列值（从而起与LIKE相同的作用）？答案是肯定的，使用^和$定位符（anchor）即可
 >
@@ -386,7 +508,7 @@ WHERE order_num=20005；`
 - 如果分组列中具有NULL值，则**NULL将作为一个分组返回**。如果列中有多行NULL值，它们将分为一组。
 - GROUP BY子句必须出现在**WHERE子句之后，ORDER BY子句之前**。
 
-> 使用ROLLUP使用WITH ROLLUP关键字，可以得到每个分组以及每个分组汇总级别（针对每个分组）的值，如下所示：
+> 使用ROLLUP使用`WITH ROLLUP`关键字，可以得到每个分组以及每个分组汇总级别（针对每个分组）的值，如下所示：
 > `SELECT vend_id,COUNT(*)AS num_prods FROM products
 > GROUP BY vend_id WITH ROLLUP;`
 
@@ -443,7 +565,51 @@ ORDER BY cust_name;
 > - 这时，再次测试它。
 > - 对于要增加的每个查询，重复这些步骤。这样做仅给构造查询增加了一点点时间，但节省了以后（找出查询为什么不正常）的大量时间，并且极大地提高了查询一开始就正常工作的可能性。
 
-## 联结表
+----
+
+**带关键字EXISTS的子查询**
+
+关键字EXISTS表示存在，后面的参数是一个任意的子查询，系统对子查询进行运算以判断它是否返回行；如果至少返回一行，那么EXISTS的结果为true，此时外层语句将进行查询；如果子查询没有返回任何行，那么EXISTS返回的结果是false，此时外层语句将不进行查询。
+
+----
+
+**带关键字ANY的子查询**
+
+关键字ANY表示满足其中任一条件。使用关键ANY时，只要满足内层查询语句返回的结果中的任何一个就可以通过该条件来执行外层查询语句。
+
+关键字ANY通常和比较运算符一起使用。例如，“>ANY”表示大于任何一个值，“=ANY”表示等于任何一个值。
+
+【示例】查询数据库school的表tstudent中哪些学生可以获得奖学金。学生的成绩达到其中任何一项奖学金规定的分数即可，SQL语句示例如下
+
+```sql
+SELECT st.stuid,st.name, sc.Chinese+sc.English+sc.Math+sc.Chemistry+sc.Physics total
+FROM t_student st, s_score sC WHERE st.stuid=sc.stuid
+AND st.stuid in (SELECT stuid FROM s_score
+WHERE Chinese+English+Math+Chemistry+Physics >=ANY(SELECT score FROM t_scholarship));
+```
+
+-----
+
+**带关键字ALL的子查询**
+
+关键字ALL表示满足所有条件。使用关键字ALL时，只有满足内层查询语句返回的所有结果才可以执行外层查询语句。
+
+关键字ALL也经常与比较运算符一起使用。例如，“>ALL”表示大于所有值，“<ALL”表示小于所有值。
+
+【示例】查询数据库school的表tstudent中哪些学生可以获得一等奖学金，即学生的总成绩要达到一等奖学金规定的分数，而一等奖学金是最高奖学金。SQL语句示例如下：
+
+```sql
+SELECT st.stuid,st.name, sc.Chinese+sc.English+sc.Math+sc.Chemistry+sc.Physics total
+FROM t_student st,s_score sc
+WHERE st.stuid=sc.stuid
+AND st.stuid in (SELECT stuid FROMs score
+WHERE Chinese+English+Math+Chemistry+Physics>=ALL
+(SELECT score FROM t_scholarship));
+```
+
+> 关键字ANY和关键字ALL的使用方式是一样的，但是这两者有很大的区别。使用关键字ANY时，只要满足内层查询语句返回的结果中的任何一个就可以通过该条件来执行外层查询语句；关键字ALL则刚好相反，只有满足内层查询语句的所有结果，才可以执行外层查询语句。
+
+## 联合查询
 
 联结是一种机制，用来在一条SELECT语句中关联表
 
@@ -462,22 +628,34 @@ ORDER BY vend_name,prod_name;
 
 > **不要忘了WHERE子句** 应该保证所有联结都有WHERE子句，否则MySQL将返回比想要的数据多得多的数据(笛卡尔积)。同理，应该保证WHERE子句的正确性。不正确的过滤条件将导致MySQL返回不正确的数据。
 
-- 内联结INNER JOIN
+### 内连接查询
 
-```mysql
-SELECT vend_name,prod_name,prod_price
-FROM vendors INNER JOIN products
-ON vendors.vend_id=products.vend_id；
+- 自连接
+- 等值连接
+- 不等连接
+
+----
+
+**自连接**，就是指表与其自身进行连接。
+
+查询学生“Alicia Florric”所在班级的其他学生，SQL语句如下：
+
+```sql
+SELECT ts1.stuid,ts1.name,ts1.classno 
+FROM t_student AS ts1,t_student AS ts2
+WHERE ts1.classno=ts2.classno AND ts2.name='Alicia Florric';
+
+#或者使用Inner Join
+SELECT ts1.stuid,ts1.name,ts1.classno
+FROM t_student ts1 INNER JOIN t_student ts2
+ON ts1.classno=ts2.classno AND ts2.name='Alicia Florric';
 ```
-
-- 自联结
 
 ```mysql
 #查询生产有产品ID是'DTNTR'的产品的供应商生产的所有商品
 #使用子查询
 SELECT prod_id,prod name FROM products
-WHERE vend_id=(SELECT vend_id
-							FROM products	WHERE prod_id='DTNTR');
+WHERE vend_id=(SELECT vend_id FROM products	WHERE prod_id='DTNTR');
 #使用自联结：两个表实际上是相同的表
 SELECT p1.prod_id,pl.prod_name
 FROM products AS pl,products AS p2
@@ -487,7 +665,37 @@ AND p2.prod_id=‘DTNTR’;
 
 > **用自联结而不用子查询** 自联结通常作为外部语句用来替代从相同表中检索数据时使用的子查询语句。虽然最终的结果是相同的，但有时候处理联结远比处理子查询快得多。
 
-- 外部联结OUTER JOIN
+-----
+
+ **等值连接**，就是在关键字ON后的匹配条件中通过等于关系运算符（=）来实现等值条件。
+
+```sql
+SELECT s.stuid,s.name,s.gender,s.age,s.classno,c.cname,c.loc, c.advisor
+FROM t_student s,t_class c WHERE s.classno=c.classno;
+
+#或者使用Inner Join
+SELECT s.stuid,s.name,s.gender,s.age,s.classno,c.cname,c.loc, c.advisor
+FROM t_student s INNER JOIN t_class c
+ON s.classno=c.classno;
+```
+
+----
+
+**不等连接，**就是在关键字ON后的匹配条件中通过除了等于关系运算符来实现不等条件外，还可以使用关系运算符，包含“>”“>=”“<”“<=”和“!=”等运算符号
+
+-----
+
+### 外连接查询
+
+```
+SELECT field1,field2,……,fieldn
+FROM tablename1 LEFT|RIGHT|FULL [OUTER] JOIN tablename2
+ON CONDITION
+```
+
+左连接的结果包括LEFT OUTER字句中指定的左表的所有行，而不仅仅是连接列所匹配的行，如果左表的某行在右表中没有匹配行，则在相关联的结果行中，右表的所有选择列表均为空值。
+
+全外连接实际上是左外连接与右外连接去重后的合集。
 
 > **外部联结的类型** 存在两种基本的外部联结形式：左外部联结和右外部联结。它们之间的唯一差别是所关联的表的顺序不同。换句话说，左外部联结可通过颠倒FROM或WHERE子句中表的顺序转换为右外部联结。因此，两种类型的外部联结可互换使用，而究竟使用哪一种纯粹是根据方便而定。
 
@@ -533,6 +741,8 @@ UNION规则：
 
 > 在用UNION组合查询时，只能使用一条ORDER BY子句，它必须出现在最后一条SELECT语句之后。对于结果集，不存在用一种方式排序一部分，而又用另一种方式排序另一部分的情况，因此不允许使用多条ORDER BY子句。
 
+# 数据操作DML
+
 ## 插入INSERT
 
 插入可以用几种方式使用：
@@ -544,11 +754,9 @@ UNION规则：
 
 ### 插入完整的行
 
-`INSERT INTO customers VALUES(NULL,‘Pep E.LaPew',‘100 Main Street',‘Los Angeles',‘CA'，‘90046'，‘USA',NULL，NULL)`
-
-编写INSERT语句的更安全（不过更烦琐）的方法如下：
-
 ```mysql
+INSERT INTO customers VALUES(NULL,‘Pep E.LaPew',‘100 Main Street',‘Los Angeles',‘CA'，‘90046'，‘USA',NULL，NULL);
+#或者
 INSERT INTO customers (cust_name,cust_address,cust_city,cust_state,cust_zip,cust_country,cust_contact,cust_email)
 VALUES('Pep E.LaPew',‘100 Main Street',‘Los Angeles',CA',‘90046’,‘USA',NULL,NULL);
 
@@ -558,6 +766,7 @@ VALUES('Pep E.LaPew',‘100 Main Street',‘Los Angeles',CA',‘90046’,‘USA'
 >
 > 使用这种语法，还可以省略列。这表示可以只给某些列提供值，给其他列不提供值。省略的列必须满足以下某个条件。
 >
+> - 自动增加约束字段
 > - 该列定义为允许NULL值（无值或空值）
 > - 在表定义中给出默认值。这表示如果不给出值，将使用默认值。
 >
@@ -569,9 +778,8 @@ VALUES('Pep E.LaPew',‘100 Main Street',‘Los Angeles',CA',‘90046’,‘USA'
 
 ```mysql
 INSERT INTO customers(cust_name,cust_address,cust_city,cust_state,cust_zip,cust_country)
-VALUES('Pep E.LaPew', '1100 Main Street','Los Angeles', 'CA','90046','USA'), 
+		VALUES('Pep E.LaPew', '1100 Main Street','Los Angeles', 'CA','90046','USA'), 
 			('M.Martian', '42 Galaxy way','New York','NY','11213', 'USA');
-
 ```
 
 > 其中单条INSERT语句有多组值，每组值用一对圆括号括起来，用逗号分隔。
@@ -642,6 +850,8 @@ WHERE cust_id=10006；
 - 在对UPDATE或DELETE语句使用WHERE子句前，应该先用SELECT进行测试，保证它过滤的是正确的记录，以防编写的WHERE子句不正确。
 - 使用强制实施引用完整性的数据库，这样MySQL将不允许删除具有与其他表相关联的数据的行。
 
+# 表操作
+
 ## 创建表CREATE TABLE
 
 为利用CREATE TABLE创建表，必须给出下列信息：
@@ -665,6 +875,14 @@ PRIMARY KEY(cust_id)
 
 ```
 
+----
+
+**完整性约束条件**
+
+![image-20200507124055205](MySQL必知必会.assets/image-20200507124055205.png)
+
+
+
 - NULL 值
 
 > NULL值就是没有值或缺值。允许NULL值的列也允许在插入行时不给出该列的值。不允许NULL值的列不接受该列没有值的行，换句话说，在插入或更新行时，该列必须有值。每个表列或者是NULL列，或者是NOT NULL列，这种状态在创建时由表的定义规定。
@@ -673,17 +891,20 @@ PRIMARY KEY(cust_id)
 
 - 主键
 
-> 主键值必须唯一。即，表中的每个行必须具有唯一的主键值。如果主键使用单个列，则它的值必须唯一。如果使用多个列，则这些列的组合值必须唯一。
+> 主键是表的一个特殊字段，能唯一标识该表中的每条信息(身份证)。
 >
-> 主键中只能使用不允许NULL值的列。允许NULL值的列不能作为唯一标识。
+> - 主键值必须唯一。即，表中的每个行必须具有唯一的主键值。如果主键使用单个列，则它的值必须唯一。如果使用多个列，则这些列的组合值必须唯一。
+> - 主键中只能使用不允许NULL值的列。允许NULL值的列不能作为唯一标识。
 >
 > 其中主键用以下的类似的语句定义：`PRIMARY KEY(cust_id)`
 >
-> 创建由多个列组成的主键以逗号分隔的列表给出各列名:`PRIMARY KEY(cust_id,cust_name)`
+> 创建由多个列组成的主键以逗号分隔的列表给出各列名:`【CONSTRAINT cust_id_name】PRIMARY KEY(cust_id,cust_name)`
+>
+> 如果想给id列添加主键约束并命名，可以添加：`CONSTRAINT stu_id PRIMARY KEY(id);`
 
 - 自增属性
 
-> 每个表只允许一个`AUTO_INCREMENT`列，而且它必须被索引（如，通过使它成为主键）
+> 每个表**只允许一个**`AUTO_INCREMENT`列，而且它必须被索引（如，通过使它成为主键）
 >
 > 如果一个列被指定为AUTO_INCRE-MENT，则它需要使用特殊的值吗？你可以简单地在INSERT语句中指定一个值，只要它是唯一的（至今尚未使用过）即可，该值将被用来替代自动生成的值。后续的增量将开始使用该手工插入的值。
 >
@@ -696,6 +917,24 @@ PRIMARY KEY(cust_id)
 > 如果在插入行时没有给出值，MySQL允许指定此时使用的默认值。默认值用CREATE TABLE语句的列定义中的`DEFAULT`关键字指定。
 >
 > **不允许函数:** 与大多数DBMS不一样，MySQL不允许使用函数作为默认值，它只支持常量。
+
+- 唯一约束UNIQUE
+
+> 当数据库表中某个字段上的内容不允许重复时，可以使用UK约束进行设置。UK约束在创建数据库时为某些字段加上“UNIQUE”约束条件，保证所有记录中该字段上的值不重复。
+
+- 外键
+
+> 外键是表的一个特殊字段，外键约束是为了保证多个表（通常为两个表）之间的参照完整性，即构建两个表的字段之间的参照关系。
+>
+> 设置外键约束的两个表之间具有父子关系，即子表中某个字段的取值范围由父表决定。
+>
+> > 例如，表示一个班级和学生关系，即每个班级有多个学生。首先应该有两个表：班级表和学生表，然后学生表有一个表示班级编号的字段classno，其依赖于班级表的主键，这样字段classno就是学生表的外键，通过该字段班级表和学生表建立了关系。
+>
+> 在具体设置FK约束时，设置FK约束的字段必须依赖于数据库中已经存在的父表的主键，同时外键可以为空（NULL）。
+>
+> 可以在子表中添加：`CONSTRANT fk FORENGN KEY(son_col) REFERENCES fa_table(fa_col) `
+>
+> 其中，son_table参数是要设置外键的表名，son_col参数是要设置外键的字段，fa_table是父表的名称，fa_col是父表中设置主键约束的字段名。
 
 - 引擎类型
 
@@ -716,18 +955,48 @@ PRIMARY KEY(cust_id)
 - 在ALTER TABLE之后给出要更改的表名（该表必须存在，否则将出错）；
 - 所做更改的列表。
 
-```mysql
-#添加一个列
-ALTER TABLE vendors
-ADD vend_phone CHAR(20)；
-#删除一个列
-ALTER TABLE vendors
-DROP COLUMN vend_phone;
-#定义外键
-ALTER TABLE orderitems
-ADD CONSTRAINT fk_orderitems_orders
-FOREIGN KEY (order_num) REFERENCES orders (order_num);
-```
+> 重命名:
+>
+> `ALTER TABLE oldTablename RENAME [TO] newTablename;`
+
+> 添加一个列:
+>
+> `ALTER TABLE tablename ADD propName proplype;`
+>
+> `ALTER TABLE tablename ADD propName propType FIRST;`
+>
+> `ALTER TABLE tablename ADD pNamelNew propType AFTER pNameOld；`
+>
+> `ALTER TABLE vendors ADD vend_phone CHAR(20)；`
+
+> 删除一个列
+>
+> `ALTER TABLE vendors DROP COLUMN vend_phone;`
+
+> 定义外键
+>
+> `ALTER TABLE orderitems
+> ADD CONSTRAINT fk_orderitems_orders
+> FOREIGN KEY (order_num) REFERENCES orders (order_num);`
+
+> 修改字段:
+>
+> 字段是由字段名和数据类型来进行定义的。如果要实现修改字段，除了可以修改字段名外，还可以实现修改字段所能存储的数据类型。由于一个表中拥有许多字段，因此还可以实现修改字段的顺序。
+>
+> ```
+> ALTER TABLE tablename MODIFY propName propType;
+> ALTER TABLE tablename CHANGE pNameOld pNameNew pTypeOld;
+> ALTER TABLE tablename CHANGE pNameOld pNameNew pTypeNew;
+> ALTER TABLE tablename MODIFY pNamel propType FIRST|AFTER pName2；
+> ```
+>
+> 第一条语句用于修改**字段类型**。其中，tablename参数表示所要修改表的名字，propName参数为所修改字段的名称，propType为字段propName修改后的类型。
+>
+> 第二条语句用于修改**字段的名称**。其中pNameOld参数为所修改字段的名称，pNameNew为修改后的字段名，pTypeOld为字段pNameOld的数据类型。
+>
+> 第三条语句用于同时修改**字段名称和类型**。其中，pTypeNew为字段pNameNew的数据类型。
+>
+> 第四条语句用于修改字段的顺序。其中，tablename参数表示所要修改表的名字，pName1参数为所要调整顺序的字段名称，FIRST参数表示将字段调整到表的第一个位置，“AFTER pName2”参数表示将字段调整到pName2字段位置之后。
 
 ## 删除表DROP TABLE
 
@@ -736,3 +1005,466 @@ FOREIGN KEY (order_num) REFERENCES orders (order_num);
 ## 重命名表RENAME TABLE
 
 `RENAME TABLE vendors2 TO vendors;`
+
+
+
+# 索引
+
+索引是一种特殊的数据库结构，可以用来快速查询数据库表中的特定记录，是提高数据库性能的重要方式。MySQL中，所有的数据类型都可以被索引
+
+索引由数据库表中的一列或多列组合而成，其作用是提高对表中数据的查询速度。
+
+通过索引，查询数据时可以不必读完记录的所有信息，而只是查询索引列，否则数据库系统将读取每条记录的所有信息进行匹配。
+
+索引有两种存储类型，包括**B型树（BTREE）**索引和**哈希（HASH）索引**。InnoDB和MyISAM存储引擎支持BTREE索引，MEMORY存储引擎支持HASH索引和BTREE索引，默认为前者。
+
+（1）索引的优点是可以提高检索数据的速度，这是创建索引的主要原因；对于有依赖关系的子表和父表联合查询时，可以提高查询速度；使用分组和排序子句进行数据查询时，同样可以显著节省查询中分组和排序的时间。
+
+（2）索引的缺点是创建和维护索引需要耗费时间，耗费时间的数量随着数据量的增加而增加；索引需要占用物理空间，每一个索引要占一定的物理空间；增加、删除和修改数据时，要动态地维护索引，造成数据的维护速度降低了。
+
+## 索引的分类
+
+MySQL的索引包括普通索引、唯一性索引、全文索引、单列索引、多列索引和空间索引等。
+
+---
+
+1. 普通索引
+
+在创建普通索引时，不附加任何限制条件。这类索引可以创建在任何数据类型中，其值是否**唯一和非空**，要由字段本身的完整性约束条件决定。建立索引以后，可以通过索引进行查询。
+
+---
+
+2. 唯一性索
+
+引使用UNIQUE参数可以设置索引为唯一性索引，在创建唯一性索引时，限制该索引的值必须是唯一的。
+
+通过唯一性索引，可以更快速地确定某条记录。主键就是一种特殊唯一性索引。
+
+-----
+
+3. 全文索引
+
+全文索引使用参数FULLTEXT可以设置索引为全文索引。全文索引只能创建在CHAR、VARCHAR或TEXT类型的字段上，查询数据量较大的字符串类型的字段时，使用全文索引可以提高查询速度。
+
+MySQL数据库从3.23.23版开始支持全文索引，但只有MyISAM存储引擎支持全文检索。在默认情况下，全文索引的搜索执行方式不区别大小写；但索引的列使用二进制排序后，可以执行区分大小写的全文索引。
+
+----
+
+4. 单列索引
+
+在表中的单个字段上创建索引。单列索引只根据该字段进行索引。单列索引可以是普通索引，也可以是唯一性索引，还可以是全文索引。只要保证该索引只对应一个字段即可。
+
+----
+
+5. 多列索引
+
+多列索引时在表的多个字段上创建一个索引。该索引指向创建时对应的多个字段，可以通过这几个字段进行查询，但是只有查询条件中使用了这些字段中的第一个字段时才会被使用。
+
+---
+
+6. 空间索引
+
+使用参数SPATIAL可以设置索引为空间索引。空间索引只能建立在空间数据类型上，这样可以提高系统获取空间数据的效率。
+
+-----
+
+## 索引的设计原则
+
+1. **选择唯一性索引**：唯一性索引的值是唯一的，可以更快速地通过该索引来确定某条记录。例如，学生表中学号是具有唯一性的字段，为该字段建立唯一性索引可以很快确定某个学生的信息，如果使用姓名的话，可能存在同名现象，从而降低查询速度。
+2.  **为经常需要排序、分组和联合操作的字段建立索引**：经常需要使用ORDER BY、GROUP BY、DISTINCT和UNINON等操作的字段，排序操作会浪费很多时间，如果为其建立索引，可以有效地避免排序操作。
+3. **为经常作为查询条件的字段建立索引**：如果某个字段经常用来做查询条件，那么该字段的查询速度会影响整个表的查询速度，为这样的字段建立索引可以提高整个表的查询速度。
+4. **限制索引的数目：**索引的数目不是越多越好。每个索引都需要占用磁盘空间，索引越多，需要的磁盘空间就越大，修改表时，对索引的重构和更新很麻烦。
+5. **尽量使用数据量少的索引：**如果索引的值很长，那么查询的速度会受到影响。例如，对一个CHAR(100)类型的字段进行全文检索需要的时间肯定要比对CHAR(10)类型的字段需要的时间多。
+6. **尽量使用前缀来索引：**如果索引的值很长，最好使用值的前缀来索引。例如，TEXT和BLOG类型的字段，进行全文检索会很浪费时间，如果只检索字段前面的若干字符，这样可以提高检索速度。
+7. **删除不再使用或者很少使用的索引：**表中的数据被大量更新，或者数据的使用方式被改变后，原有的一些索引可能不再需要。数据库管理员应当定期找出这些索引，将它们删除，从而减少索引对更新操作的影响。
+
+## 创建和删除索引
+
+创建索引有3种方式，分别是创建表的时候创建索引、在已经存在的表上创建索引和使用ALTER TABLE语句来创建索引。
+
+### 创建索引
+
+所谓普通索引，就是在创建索引时，不附加任何限制条件（唯一、非空等限制）。该类型的索引可以创建在任何数据类型的字段上。
+
+----
+
+**创建表时直接创建**
+
+引通过SQL语句INDEX来实现，其基本形式如下：
+
+```sql
+CREATE TABLE tablename(
+propname1 typel[CONSTRAINT1],
+propname2 type2[CONSTRAINT2],
+propnamen typen
+[UNIQUE|IFULLTEXTI|SPATIAL] INDEX|KEY
+[indexname](propname1[(length)][ASC|DESC]));
+```
+
+> 参数UNIQUE是可选参数，表示索引为唯一性索引；
+>
+> 参数FULLTEXT是可选参数，表示索引是全文索引；
+>
+> 参数SPATIAL也是可选参数，表示索引为空间索引；
+>
+> 参数INDEX和KEY是用来指定字段为索引的，两者选择其中之一就可以了，作用是一样的；参数indexname是索引名字；
+>
+> 参数propname1是索引对应的字段的名称，该字段必须为前面定义好的字段，括号；
+>
+> 参数length是可选参数，其指索引的长度，必须是字符串类型才可以使用；参数ASC和DESC都是可选参数，ASC表示升序排列，DESC表示降序排列。
+
+查看是否应用索引：`EXPLAIN select * from tablename where condition; `
+
+-----
+
+**在已经存在的表上创建**
+
+````sql
+CREATE [UNIQUE|FULLTEXT|SPATIAL]INDEX indexname ON tablename (propname[(length)][ASC|DESC]);
+````
+
+----
+
+**通过ALTER TABLE语句创建**
+
+```sql
+ALTER TABLE tablename ADD [UNIQUE|FULLTEXT|SPATIAL]INDEX|KEY indexname (propname [(length)][ASCIDESC]);
+```
+
+---
+
+### 创建多列索引
+
+------
+
+```sql
+CREATE TABLE tablename(
+propname1 typel[CONSTRAINT1],
+propname2 type2[CONSTRAINT2],
+propnamen typen
+INDEX|KEY [indexname](propname1[(length)][ASC|DESC]),propname2[(length)][ASC|DESC]),...);
+```
+
+### 删除索引
+
+`DROP INDEX indexname ON tablename`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 视图
+
+> 视图是虚拟的表。与包含数据的表不一样，**视图只包含使用时动态检索数据的查询(SQL语句)。**
+
+视图的一些常见应用
+
+- 重用SQL语句
+- 简化复杂的SQL操作。在编写查询后，可以方便地重用它而不必知道它的基本查询细节
+- 使用表的组成部分而不是整个表
+- 保护数据。可以给用户授予表的特定部分的访问权限而不是整个表的访问权限
+- 更改数据格式和表示。视图可返回与底层表的表示和格式不同的数据。
+
+> 视图仅仅是用来查看存储在别处的数据的一种设施。视图本身不包含数据，因此它们返回的数据是从其他表中检索出来的。在添加或更改这些表中的数据时，视图将返回改变过的数据。
+
+> **性能问题:** 因为视图不包含数据，所以每次使用视图时，都必须处理查询执行时所需的任一个检索。如果你用多个联结和过滤创建了复杂的视图或者嵌套了视图，可能会发现性能下降得很厉害。因此，在部署使用了大量视图的应用前，应该进行测试。
+
+视图创建和使用的一些最常见的规则和限制
+
+- 与表一样，视图必须唯一命名（不能给视图取与别的视图或表相同的名字）
+- 对于可以创建的视图数目没有限制
+- 为了创建视图，必须具有足够的访问权限。这些限制通常由数据库管理人员授予
+- 视图可以嵌套，即可以利用从其他视图中检索数据的查询来构造一个视图
+- ORDER BY可以用在视图中，但如果从该视图检索数据的SELECT语句中也含有ORDERBY，那么该视图中的ORDER BY将被覆盖
+- 视图不能索引，也不能有关联的触发器或默认值
+- 视图可以和表一起使用。例如，编写一条联结表和视图的SELECT语句。
+
+### 使用视图
+
+视图的创建
+
+- 视图用`CREATE VIEW ...AS`语句来创建
+- 使用`SHOW CREATE VIEW viewname；`来查看创建视图的语句
+- 用DROP删除视图，其语法为`DROP VIEW viewname;`
+- 更新视图时，可以先用DROP再用CREATE，也可以直接用`CREATE OR REPLACE VIEW`。如果要更新的视图不存在，则第2条更新语句会创建一个视图；如果要更新的视图存在，则第2条更新语句会替换原有视图。
+
+```mysql
+#创建一个名为productcustomers的视图，它联结三个表，以返回已订购了任意产品的所有客户的列表
+CREATE VIEW productcustomers AS
+SELECT cust_name,cust_contact,prod_id
+FROM customers,orders,orderitems
+WHERE customers.cust_id=orders.cust_id
+AND orderitems.order_num=orders.order_num;
+#检索订购了产品TNT2的客户
+SELECT cust_name,cust_contact
+FROM productcustomers
+WHERE prod_id='TNT2'；
+```
+
+```mysql
+#用视图重新格式化检索出的数据
+CREATE VIEW vendorlocations AS
+SELECT Concat(RTrim(vend name),'(',RTria(vend_country),')')
+AS vend_title
+FROM vendors
+ORDER BY vend_nane:
+
+```
+
+```mysql
+#用视图过滤不想要的数据
+CREATE VIEW customeremaillist AS
+SELECT cust_id,cust_name,cust_email
+FROM customers
+WHERE cust_email IS NOT NULL;
+
+```
+
+```mysql
+#使用视图与计算字段
+CREATE VIEW orderitemsexpanded AS
+SELECT order_num,prod_id,quantity,item_price,quantity*item_price AS expanded_price
+FROM orderitems;
+
+```
+
+## 存储过程
+
+> 存储过程简单来说，就是为以后的使用而**保存的一条或多条MySQL语句的集合**。可将其视为批文件，虽然它们的作用不仅限于批处理。
+
+- 通过把处理封装在容易使用的单元中，简化复杂的操作（正如前面例子所述）
+- 由于不要求反复建立一系列处理步骤，这保证了数据的完整性。如果所有开发人员和应用程序都使用同一（试验和测试）存储过程，则所使用的代码都是相同的。这一点的延伸就是防止错误。需要执行的步骤越多，出错的可能性就越大。防止错误保证了数据的一致性。
+- 简化对变动的管理。如果表名、列名或业务逻辑（或别的内容）有变化，只需要更改存储过程的代码。使用它的人员甚至不需要知道这些变化。这一点的延伸就是安全性
+- 通过存储过程限制对基础数据的访问减少了数据讹误（无意识的或别的原因所导致的数据讹误）的机会。
+- 提高性能。因为使用存储过程比使用单独的SQL语句要快。
+- 存在一些只能用在单个请求中的MySQL元素和特性，存储过程可以使用它们来编写功能更强更灵活的代码
+
+### 使用存储过程
+
+```mysql
+#创建
+CREATE PROCEDURE productpricing()
+BEGIN
+SELECT Avg(prod_price)AS priceaverage
+FROM products;
+END;
+#使用
+CALL productpricing();
+#删除:注意没有使用后面的()，只给出存储过程名。
+DROP PROCEDURE productpricing;
+```
+
+> 此存储过程名为productpricing，用`CREATE PROCEDURE productpricing()`语句定义。如果存储过程接受参数，它们将在()中列举出来。此存储过程没有参数，但后跟的()仍然需要。BEGIN和END语句用来限定存储过程体，过程体本身仅是一个简单的SELECT语句
+
+> **mysql命令行客户机的分隔符** : 默认的MySQL语句分隔符为`;`。mysql命令行实用程序也使用`;`作为语句分隔符。如果命令行实用程序要解释存储过程自身内的`;`字符，则它们最终不会成为存储过程的成分，这会使存储过程中的SQL出现句法错误。解决办法是临时更改命令行实用程序的语句分隔符，如下所示：
+>
+> ```mysql
+> DELIMITER //
+> CREATE PROCEDURE productpricing()
+> BEGIN
+> SELECT Avg(prod_price) AS priceaverage
+> FROM products;
+> END//
+> DELIMITER;
+> ```
+>
+> 其中，DELIMITER //告诉命令行实用程序使用//作为新的语句结束分隔符，可以看到标志存储过程结束的END定义为END//而不是END;。这样，存储过程体内的；仍然保持不动，并且正确地传递给数据库引擎。最后，为恢复为原来的语句分隔符，可使用DELIMITER ;。
+
+MySQL称存储过程的执行为调用，因此MySQL执行存储过程的语句为CALL。CALL接受存储过程的名字以及需要传递给它的任意参数：`CALL productpricing(@pricelow,@pricehigh,@priceaverage);`
+
+> 因为存储过程实际上是一种函数，所以存储过程名后需要有()符号（即使不传递参数也需要）
+
+> 一般，存储过程并不显示结果，而是把结果返回给你指定的变量。
+
+```mysql
+CREATE PROCEDURE productpricing(
+OUT pl DECIMAL(8,2),
+OUT ph DECIMAL(8,2)，
+OUT pa DECIMAL(8,2)
+BEGIN
+SELECT Min(prod_price) INTO p1 FROM products;
+SELECT Max(prod_price) INTO ph FROM products;
+SELECT Avg(prod_price) INTO pa FROM products;
+END;   
+```
+
+> 每个参数必须具有指定的类型
+>
+> 关键字OUT指出相应的参数用来从存储过程传出一个值（返回给调用者）
+>
+> MySQL支持IN（传递给存储过程）、OUT（从存储过程传出，如这里所用）和INOUT（对存储过程传入和传出）类型的参数。存储过程的代码位于BEGIN和END语句内
+>
+> **注意**，记录集不是允许的类型，因此，不能通过一个参数返回多个行和列。
+
+```mysql
+#调用：所有MySQL变量都必须以@开始
+CALL productpricing(@pricelow,@pricehigh,@priceaverage);     
+```
+
+> 在调用时，这条语句并不显示任何数据。它返回以后可以显示（或在其他处理中使用）的变量。  
+> 为了显示检索出的产品最低价格和平均价格，可如下进行：`select @pricelow,@priceaverage`
+
+```mysql
+#例:使用IN和OUT
+CREATE PROCEDURE ordertotal(
+	IN onumber INT,
+	OUT ototal DECIMAL(8,2)
+BEGIN
+	SELECT Sum(item_price*quantity)
+	FROM orderitems
+	WHERE order_num = onumber
+	INTO ototal;
+END;
+#调用
+SELECT ordertotal(2500,@total);
+SELECT @total;
+```
+
+> 为显示用来创建一个存储过程的CREATE语句，使用SHOW CREATE PROCEDURE语句
+>
+> `SHOW CREATE PROCEDURE ordertotal`
+
+## 游标
+
+> MySQL检索操作返回一组称为结果集的行。这组返回的行都是与SQL语句相匹配的行（零行或多行）。有时，需要在检索出来的行中前进或后退一行或多行。这就是使用游标的原因。
+
+**游标（cursor）**是一个存储在MySQL服务器上的数据库查询，它不是一条SELECT语句，而是被该语句检索出来的**结果集**。在存储了游标之后，应用程序可以根据需要滚动或浏览其中的数据。
+
+> MySQL游标只能用于存储过程（和函数）
+
+使用游标涉及几个明确的步骤
+
+- 在能够使用游标前，必须声明（定义）它。这个过程实际上没有检索数据，它只是定义要使用的SELECT语句
+- 一旦声明后，必须打开游标以供使用。这个过程用前面定义的SELECT语句把数据实际检索出来
+- 对于填有数据的游标，根据需要取出（检索）各行
+-  在结束游标使用时，必须关闭游标。
+
+> 游标用DECLARE语句创建，DECLARE命名游标，并定义相应的SELECT语句，根据需要带WHERE和其他子句;
+
+```mysql
+#定义名为ordernumbers的游标
+CREATE PROCEDURE processorders()
+BEGIN
+	DECLARE ordernumbers CURSOR
+	FOR
+	SELECT order_num FROM orders;
+END;
+# 存储过程处理完成后，游标就消失（因为它局限于存储过程）
+```
+
+> 游标用OPEN CURSOR语句来打开:`OPEN ordernumbers;`
+>
+> 在处理OPEN语句时执行查询，存储检索出的数据以供浏览和滚动。
+>
+> 游标处理完成后，应当使用如下语句关闭游标：`CLOSE ordernumbers;`
+>
+> CLOSE释放游标使用的所有内部内存和资源，因此在每个游标不再需要时都应该关闭。
+
+> 在一个游标被打开后，可以使用`FETCH`语句分别访问它的每一行。FETCH指定检索什么数据（所需的列），检索出来的数据存储在什么地方。它还向前移动游标中的内部行指针，使下一条FETCH语句检索下一行（不重复读取同一行）。
+
+```mysql
+#循环检索数据，从第一行到最后一行
+CREATE PROCEDURE processorders()
+BEGIN
+	--Declare local variables
+	DECLARE o INT；
+	--Declare the cursor
+	DECLARE ordernumbers CURSOR
+	FOR
+	SELECT order_num FROM orders;
+	--Open the cursor
+	OPEN ordernumbers;
+	
+	--Loop through all rows
+	REPEAT
+	--Get order number:FETCH检索当前order_num到声明的名为o的变量中
+	FETCH ordernumbers INTO o;
+	--End of 1oop
+	UNTIL done END REPEAT;
+
+	--Close the cursor
+	CLOSE ordernumbers;
+END;
+
+```
+
+> FETCH是在REPEAT内，因此它反复执行直到done为真（由UNTIL done END REPEAT；规定）。为使它起作用，用一个DEFAULT 0（假，不结束）定义变量done。那么，done怎样才能在结束时被设置为真呢？答案是用以下语句：`DECLARE CONTINUE HANDLER FOR SQLSTATE ‘02000'SET done=1;`
+>
+> 这条语句定义了一个CONTINUE HANDLER，它是在条件出现时被执行的代码。这里，它指出当SQLSTATE '02000’出现时，SET done=1。SQLSTATE '02000’是一个未找到条件，当REPEAT由于没有更多的行供循环而不能继续时，出现这个条件。
+
+> **DECLARE语句的次序:** DECLARE语句的发布存在特定的次序。用DECLARE语句定义的局部变量必须在定义任意游标或句柄之前定义，而句柄必须在游标之后定义
+
+```mysql
+CREATE PROCEDURE processorders()
+BEGIN
+    --Declare local variables
+    DECLARE done BOOLEAN DEFAULT 0;
+    DECLARE o INT;
+    DECLARE t DECIMAL(8,2);
+    --Declare the cursor
+    DECLARE ordernumbers CURSOR
+    FOR
+    SELECT order_num FROM orders;
+    --Declare continue handler
+    DECLARE CONTINUE HANDLER FOR SQLSTATE '02000' SET done=1;
+    -- Create a table to store the results 
+    CREATE TABLE IF NOT EXISTS ordertotals (order_num INT,total DECIMAL(8,2));
+
+    --Open the cursor
+    OPEN ordernumbers;
+    --Loop through all rows
+    REPEAT
+    --Get order number
+    FETCH ordernumbers INTO o;
+    --Cet the total for this order
+    CALL ordertotal(o,1,t);
+    --Insert order and total into ordertotals
+    INSERT INTO ordertotals(order_num,total)
+    VALUES(o,t);
+    --End of 1oop
+    UNTIL done END REPEAT;
+    --Close the cursor
+    CLOSE ordernumbers;
+END;
+
+```
+
+> 这个例子中，我们增加了另一个名为t的变量（存储每个订单的合计）。此存储过程还在运行中创建了一个新表（如果它不存在的话），名为ordertotals。这个表将保存存储过程生成的结果。FETCH像以前一样取每个order_num，然后用CALL执行另一个存储过程（我们在前一章中创建）来计算每个订单的带税的合计（结果存储到t）。最后，用INSERT保存每个订单的订单号和合计。此存储过程不返回数据，但它能够创建和填充另一个表，可以用一条简单的SELECT语句查看该表：`SELECT* FROM ordertotals;`
+
+## 触发器
+
+触发器是MySQL响应以下任意语句而自动执行的一条MySQL语句（或位于BEGIN和END语句之间的一组语句）：❑ DELETE；❑ INSERT；❑ UPDATE。其他MySQL语句不支持触发器。
+
+在创建触发器时，需要给出4条信息：
+
+- 唯一的触发器名；
+- 触发器关联的表；
+- 触发器应该响应的活动（DELETE、INSERT或UPDATE）；
+- 触发器何时执行（处理之前或之后）
+
+> **保持每个数据库的触发器名唯一** 在MySQL 5中，触发器名必须在每个表中唯一，但不是在每个数据库中唯一。这表示同一数据库中的两个表可具有相同名字的触发器。这在其他每个数据库触发器名必须唯一的DBMS中是不允许的，而且以后的MySQL版本很可能会使命名规则更为严格。因此，现在最好是在数据库范围内使用唯一的触发器名。
+
+触发器用CREATE TRIGGER语句创建:
+
+## 事务
+
