@@ -1,8 +1,18 @@
 # HelpJava
 
+|   [走向Java](#走向Java)   | [Java基础](#Java基础) | [网络编程](#网络编程) | [多线程](#多线程) |   [JVM](#JVM)   |    [SSM](#SSM)    |
+| :-----------------------: | :-------------------: | :-------------------: | :---------------: | :-------------: | :---------------: |
+|          :beer:           |        :bread:        |        :cloud:        |      :hand:       |       :v:       |       :pen:       |
+|      [Linux](#Linux)      |    [MySQL](#MySQL)    |    [Redis](#Redis)    |    [git](#git)    | [Nginx](#Nginx) | [Docker](#Docker) |
+|        :computer:         |        :mouse:        |         :cat:         |       :bee:       |      :pig:      |     :dolphin:     |
+| [SpringBoot](#SpringBoot) | [设计模式](#设计模式) |                       |                   |                 |                   |
+|          :boot:           |         :egg:         |                       |                   |                 |                   |
+
+
 ![image-20200514222731556](README.assets/image-20200514222731556.png)
 
 [尚硅谷2020最新版Java学习路线图](https://www.bilibili.com/read/cv5216534/?spm_id_from=333.788.b_636f6d6d656e74.9)
+
 
 ## 走向Java
 
@@ -101,29 +111,32 @@
 
 ## JVM 
  [01深入理解Java虚拟机のJVM内存区域与对象布局.md](04.JVM/01深入理解Java虚拟机のJVM内存区域与对象布局.md)   
+
  [02深入理解Java虚拟机の垃圾回收机制.md](04.JVM/02深入理解Java虚拟机の垃圾回收机制.md)    
+
  [03深入理解Java虚拟机の高效并发.md](04.JVM/03深入理解Java虚拟机の高效并发.md)   
 
 ## SSM
 ### Spring in Action(4ed)
 
- [01Spring简介.md](05.Spring\Spring in Action(4E)\01Spring简介.md) 
+ [01Spring简介.md](05.Spring/Spring in Action(4E)/01Spring简介.md) 
 
- [02装配bean.md](05.Spring\Spring in Action(4E)\02装配bean.md) 
+ [02装配bean.md](05.Spring/Spring in Action(4E)/02装配bean.md) 
 
- [03高级装配.md](05.Spring\Spring in Action(4E)\03高级装配.md) 
+ [03高级装配.md](05.Spring/Spring in Action(4E)/03高级装配.md) 
 
- [04面向切面.md](05.Spring\Spring in Action(4E)\04面向切面.md) 
+ [04面向切面.md](05.Spring/Spring in Action(4E)/04面向切面.md) 
 
- [05构建Spring Web.md](05.Spring\Spring in Action(4E)\05构建Spring Web.md) 
+ [05构建Spring Web.md](05.Spring/Spring in Action(4E)/05构建Spring Web.md) 
 
- [06渲染Web视图.md](05.Spring\Spring in Action(4E)\06渲染Web视图.md) 
+ [06渲染Web视图.md](05.Spring/Spring in Action(4E)/06渲染Web视图.md) 
 
- [07SpringMVC高级.md](05.Spring\Spring in Action(4E)\07SpringMVC高级.md) 
+ [07SpringMVC高级.md](05.Spring/Spring in Action(4E)/07SpringMVC高级.md) 
 
 ### Spring源码
 
- [Spring源码深度分析1--容器的实现与BeanDefinition注册.md](05.Spring/源码分析/Spring源码深度分析1--容器的实现与BeanDefinition注册.md)    
+ [Spring源码深度分析1--容器的实现与BeanDefinition注册.md](05.Spring/源码分析/Spring源码深度分析1--容器的实现与BeanDefinition注册.md)   
+
  [Spring源码深度分析2--从容器中获取bean对象.md](05.Spring/源码分析/Spring源码深度分析2--从容器中获取bean对象.md)   
 
 
@@ -203,16 +216,27 @@
 
 ## 设计模式
  [00设计模式之基.md](08.设计模式/00设计模式之基.md)   
+
  [01单例模式Singleton.md](08.设计模式/01单例模式Singleton.md)     
- [02设计模式之Factory三种工厂模式.md](08.设计模式/02设计模式之Factory三种工厂模式.md)   
+
+ [02设计模式之Factory三种工厂模式.md](08.设计模式/02设计模式之Factory三种工厂模式.md)  
+
  [03设计模式之Prototype原型模式.md](08.设计模式/03设计模式之Prototype原型模式.md)   
+
  [04设计模式之Builder建造者模式.md](08.设计模式/04设计模式之Builder建造者模式.md)   
+
  [05设计模式之Adapter适配器模式.md](08.设计模式/05设计模式之Adapter适配器模式.md)   
+
  [06设计模式之Bridge桥接模式.md](08.设计模式/06设计模式之Bridge桥接模式.md)   
+
  [07设计模式之Composite组合模式.md](08.设计模式/07设计模式之Composite组合模式.md)   
+
  [08设计模式之Decorator装饰者模式.md](08.设计模式/08设计模式之Decorator装饰者模式.md)   
+
  [09设计模式之Facade外观模式.md](08.设计模式/09设计模式之Facade外观模式.md)   
+
  [10设计模式之Flyweight享元模式.md](08.设计模式/10设计模式之Flyweight享元模式.md)   
+
  [11设计模式之Proxy代理模式.md](08.设计模式/11设计模式之Proxy代理模式.md)   
 
 
