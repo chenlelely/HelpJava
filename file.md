@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ![1594966842702](C:\Users\lelec_1.TUJIA\AppData\Roaming\Typora\typora-user-images\1594966842702.png)
 
 dao服务接口？
@@ -256,5 +257,3 @@ http://wiki.corp.tujia.com/confluence/pages/viewpage.action?pageId=16584239
 ```
 Queue<SuggestSolrBean> convergedQueue = suggestRecallService.recallAndConverge(context);
 ```
-
-返回从slor中取出的数据
