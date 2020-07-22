@@ -20,20 +20,65 @@ com.tujia.tns.suggestion.service.impl.SuggestionServiceImpl.suggest(SuggestionPa
 
 ![1595209927171](C:\Users\lelec_1.TUJIA\AppData\Roaming\Typora\typora-user-images\1595209927171.png)
 
-`SuggestionParameter`
+[SuggestionNew接口文档](http://wiki.corp.tujia.com/confluence/pages/viewpage.action?pageId=29800441)：
+
+#### 入参SuggestionParameter
 
 ```json
-"enumWrapperId":"waptujia001",     ##渠道
+"enumWrapperId":"waptujia001", ##渠道，存储入参的wrapperId，区分最初请求渠道的功能，如判断是否进入6月版
 "EnumSourceType":1,
 "CityId":23,
 "CityName":"上海",
-"SourceCode":"App_UnitList_Mainland",      ##分框
+"SourceCode":"App_UnitList_Mainland",##应用类型编码，如："分框" = "Common_Blank2_Mainland"
 "DeviceId":"3FD8FDC4BFCA343322C8F81992EA38E6",
 "CustomerLoginId":11934533,
 "Query":"隐贤居",    ##用户输入
-"Coord":"31.3110870,121.4042367",
-"Version":"6.51"
+"Coord":"31.3110870,121.4042367",##用户所在地区经纬度
+"Version":"6.51"##调用本接口的应用版本信息
+
+private String rebuildWrapperId;
+@ApiModelProperty(value = "guesslike接口专用字段")
+private int typeGroupCount;
+
+@ApiModelProperty(value = "是否展示加权明细")
+private boolean debug;
+
+@ApiModelProperty(value = "前端A/B分桶参数", example = "")
+private Map<String, String> abTest;
+
+@ApiModelProperty("判断是否只返回已分销、接入的Ctrip数据，默认为false")
+private boolean forCtripHotel = false;
+
+@ApiModelProperty("是否支持crn，若为true，则支持6月版新样式，默认为false")
+private boolean forCrn = false;
 ```
+
+#### 返回参数SuggestionResult
+
+```java
+@ApiModelProperty(value = "渠道")
+private String channel;
+@ApiModelProperty(value = "推荐列表")
+private List<SuggestionResultItem> suggestionResults;
+@ApiModelProperty(value = "同城展示记录数量，null表示不控制数量。主要在二框搜索异地知名地标，折叠部分同城房屋门店展示")
+private Integer sameCityShowCount;
+@ApiModelProperty(value = "召回、排序后的数据有房屋或门店等情况时，存储直搜房屋id列表")
+private List<Long> directSearchList;
+@ApiModelProperty(value = "召回、排序后的数据有房屋或门店等情况时，存储直搜门店id列表")
+private List<Long> directHotelList;
+@ApiModelProperty(value = "附加随行数据,为细化分桶范围或进行数据追踪，现增加随行数据，处理更为灵活。")
+private Map<String, String> additionalData;
+```
+
+- #### SuggestionResults
+
+http://wiki.corp.tujia.com/confluence/pages/viewpage.action?pageId=29800441
+
+```java
+
+```
+
+
 
 ### 入参信息修改
 
@@ -44,17 +89,18 @@ rebuildParameter(sourceCodeEnum, parameter);
 ### 上下文信息保存
 
 ```java
+SourceCodeEnum sourceCodeEnum = SourceCodeEnum.findByCode(parameter.getSourceCode());
+```
+
+```java
 SuggestionContext context = new SuggestionContext(sourceCodeEnum, parameter);
 ```
 
 ```java
 public class SuggestionContext {
     private boolean debugEnabled;
-    /**
-     * 原始参数
-     */
+    /**原始参数*/
     private SuggestionParameter originPara;
-
     private QueryBean queryBean;
     /** 是否使用新的展示名称 */
     private boolean useNewDisplayCfg = false;
@@ -145,7 +191,7 @@ intentExtractService.extract(context);
 DefaultExtractStrategy.extract(SuggestionContext context);
 ```
 
-1. 设置城市????????
+1. 设置城市
 
 ```java
 queryBean.setQCity(destinationInfo.getCityName());
@@ -168,6 +214,35 @@ queryBean.setQCityId(destinationInfo.getCityId());
 
 
 
+ ![img](http://wiki.corp.tujia.com/confluence/download/attachments/29798834/%E7%89%B9%E8%89%B2%E6%8F%90%E5%8F%96.png?version=1&modificationDate=1566819979000&api=v2) 
+
+```java
+// tag
+        Map<String, String> feaTagRestQMap = getFeatureTagsRestQry(context);
+        if (feaTagRestQMap != null) {
+            String jsonStr = feaTagRestQMap.get("tagList");
+            List<FeatureTag> featureTagList = JsonUtils.readValue(jsonStr, new TypeReference<List<FeatureTag>>() {
+            });
+            queryBean.setFeatureTagList(featureTagList);
+
+            String jsonNameStr = feaTagRestQMap.get("tagNameList");
+            List<String> tags = JsonUtils.readValue(jsonNameStr, new TypeReference<List<String>>() {
+            });
+            queryBean.setTags(tags);
+
+            // 用户输入除去特色内容
+            String restQry = feaTagRestQMap.get("restQry");
+            String restQryNoFilter = context.getQueryBean().getAdjustQryNoFilter();
+            // 剩余内容不能为目的地
+            if (StringUtils.isNotBlank(restQry) && getCity(restQry) == null && getCity(restQryNoFilter) == null) {
+                queryBean.setAdjustQry(restQry);
+            } else {
+                queryBean.setQryOnlyCityTags(true);
+            }
+```
+
+
+
 ### 重新分词adjustQuery
 
 
@@ -175,6 +250,8 @@ queryBean.setQCityId(destinationInfo.getCityId());
 
 
 ### 数据召回与初步排序
+
+http://wiki.corp.tujia.com/confluence/pages/viewpage.action?pageId=16584239
 
 ```
 Queue<SuggestSolrBean> convergedQueue = suggestRecallService.recallAndConverge(context);
