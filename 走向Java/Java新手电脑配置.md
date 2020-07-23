@@ -134,34 +134,51 @@ Live Templates 默认如下：
 
 ![在这里插入图片描述](Java新手电脑配置.assets/20190519214857443.png)
 
-#### 插件安装
+#### 插件安装与推荐
 
 ![在这里插入图片描述](Java新手电脑配置.assets/20190519215400501.png)
 
+- Alibaba Java Coding (扫描代码规范)
+- CheckStyle-IDEA (代码规范检查)
+- SonarLint(潜在Bug检查和代码规范检查)
+- FindBugs-IDEA (潜在Bug检查和代码规范检查)
+- tasks (代码任务列表，相当于memo)
+- maven helper (解决依赖冲突)
+- Key promoter X(当鼠标点击功能时，快捷键提示)
+- MetricsReloaded (代码复杂度检查)
+- Statistic (代码统计)
+- CodeGlance (在编辑代码最右侧，显示一块代码小地图)
+- GsonFormat (把 JSON 字符串直接实例化成类)
+- CamelCase (驼峰式命名和下划线命名交替变化)
+- Background Image Plus (修改背景图片)
+- Nyan progress bar (美化进度条)
+- String Manipulation (字符串处理神器)
+- restfultookit (搜索url，还自动生成默认的测试用例)
+- Markdown support (支持md文件的查看和编辑)
+- Gitee (码云的插件)
+- VisualVM Launcher(调试运行时启动visualVM)
+- RainBow Brackets（彩虹括号）
+- Maven Helper
 
-RainBow Brackets（彩虹括号）
+- ignore：生成各种ignore文件，一键创建git ignore文件的模板。
 
-Maven Helper
+- **lombok**：通过该插件可以生成实体的GetXXX和SetXXX方法。lombok的注解(@Setter,@Getter,@ToString,@@RequiredArgsConstructor,@EqualsAndHashCode或@Data)，需要在项目中添加依赖。
+- FindBugs-IDEA：检测代码中可能的bug及不规范的位置。
 
-ignore：生成各种ignore文件，一键创建git ignore文件的模板。
+- GsonFormat：根据json文本生成java类。
 
-lombok：通过该插件可以生成实体的GetXXX和SetXXX方法。lombok的注解(@Setter,@Getter,@ToString,@@RequiredArgsConstructor,@EqualsAndHashCode或@Data)，需要在项目中添加依赖。
+- VisualVM Launcher：运行java程序的时候启动visualvm，方便查看jvm的情况。
 
-FindBugs-IDEA：检测代码中可能的bug及不规范的位置。
+- GenerateAllSetter：一键调用一个对象的所有set方法并且赋予默认值。
 
-GsonFormat：根据json文本生成java类。
+- Grep console：自定义日志颜色，idea控制台可以彩色显示各种级别的log，安装完成后，在console中右键就能打开。
 
-VisualVM Launcher：运行java程序的时候启动visualvm，方便查看jvm的情况。
+- Free Mybatis plugin：mybatis 插件，让你的mybatis.xml像java代码一样编辑。
 
-GenerateAllSetter：一键调用一个对象的所有set方法并且赋予默认值。
+- MyBatis Log Plugin：直接将Mybatis执行的sql脚本显示出来，可以直接运行。
 
-Grep console：自定义日志颜色，idea控制台可以彩色显示各种级别的log，安装完成后，在console中右键就能打开。
+- Restfultookit：可以根据web访问的url找到对应的controller类，还可以生成测试数据，不用postman来组装数据。
 
-Free Mybatis plugin：mybatis 插件，让你的mybatis.xml像java代码一样编辑。
-
-MyBatis Log Plugin：直接将Mybatis执行的sql脚本显示出来，可以直接运行。
-
-Restfultookit：可以根据web访问的url找到对应的controller类，还可以生成测试数据，不用postman来组装数据。
 
 #### 创建 Java Web Project 或 Module
 创建的静态 Java Web
