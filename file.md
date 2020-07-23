@@ -668,37 +668,6 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
     }
 ```
 
-
-
-
-
-```java
-// tag
-        Map<String, String> feaTagRestQMap = getFeatureTagsRestQry(context);
-        if (feaTagRestQMap != null) {
-            String jsonStr = feaTagRestQMap.get("tagList");
-            List<FeatureTag> featureTagList = JsonUtils.readValue(jsonStr, new TypeReference<List<FeatureTag>>() {
-            });
-            queryBean.setFeatureTagList(featureTagList);
-
-            String jsonNameStr = feaTagRestQMap.get("tagNameList");
-            List<String> tags = JsonUtils.readValue(jsonNameStr, new TypeReference<List<String>>() {
-            });
-            queryBean.setTags(tags);
-
-            // 用户输入除去特色内容
-            String restQry = feaTagRestQMap.get("restQry");
-            String restQryNoFilter = context.getQueryBean().getAdjustQryNoFilter();
-            // 剩余内容不能为目的地
-            if (StringUtils.isNotBlank(restQry) && getCity(restQry) == null && getCity(restQryNoFilter) == null) {
-                queryBean.setAdjustQry(restQry);
-            } else {
-                queryBean.setQryOnlyCityTags(true);
-            }
-```
-
-
-
 ### 重新分词adjustQuery
 
 ```java
@@ -787,4 +756,112 @@ public Queue<SuggestSolrBean> recallAndConverge(SuggestionContext context) {
 
 #### SceneRecallStrategy.class
 
+![1595501560544](C:\Users\lelec_1.TUJIA\AppData\Roaming\Typora\typora-user-images\1595501560544.png)
+
 ![1595499420697](C:\Users\lelec_1.TUJIA\AppData\Roaming\Typora\typora-user-images\1595499420697.png)
+
+```java
+ private Queue<SuggestSolrBean> citySceneRecall(SuggestionContext context, boolean oversea) {
+        Queue<SuggestSolrBean> suggestSolrBeanResult = Lists.newLinkedList();
+        //召回相同城市热门景区和地标
+        CitySceneResult citySceneResult = guessULike.citySceneHandle(context, oversea);
+        List<SuggestSolrBean> suggestSolrBeans = solrRetrieveComponent
+                .retrieveDestinationOrLocation(context.getQueryBean().getAdjustQry(), context, oversea);
+        //进行排序
+        defaultRankComponent.weightPrehandle(suggestSolrBeans, context);
+        //对行政区降权
+        suggestSolrBeans.stream().forEach(vo -> {
+            if (vo.getConditionType() == ConditionTypeEnum.LOCATION
+                    && vo.getSecondConditionType() == SecondConditionTypeEnum.DISTRICT) {
+                vo.setWeight(vo.getWeight() * 0.7);
+            }
+        });
+ //排序后选择和目的地名字相同的第一个加入推荐列表？？？？？？
+        suggestSolrBeans = suggestSolrBeans.stream().sorted().collect(Collectors.toList());
+        String destinationName = context.getQueryBean().getAdjustQry();
+        Optional<SuggestSolrBean> first = suggestSolrBeans.stream().filter(bean -> bean.isNameEquals(destinationName))
+                .findFirst();
+        SuggestSolrBean destinationSolrBean = null;
+        int childGroupSize = 0;
+        Set<String> itemInfoSet = Sets.newHashSet();
+        if (first.isPresent()) {
+            destinationSolrBean = first.get();
+            //获取热门信息分组列表，以及少于热门推荐等最小数量的列表
+            Map<String, Queue<SuggestSolrBean>> retMap = getChildGroupLessQueue(citySceneResult);
+            Queue<SuggestSolrBean> childGroups = retMap.get(CHILD_GROUP_QUEUE);
+            Queue<SuggestSolrBean> hotLessQueue = retMap.get(HOT_LESS_QUEUE);
+            if (childGroups != null && childGroups.size() > 0) {
+                childGroupSize = childGroups.size();
+                //将热门景点推荐加入到第一个推荐bean中？？？？？？？？？
+                destinationSolrBean.setChildGroups(childGroups);
+                itemInfoSet = Sets.newHashSet(citySceneResult.getItemInfoSet());
+            }
+            //添加到推荐列表
+            suggestSolrBeanResult.add(destinationSolrBean);
+            // 对少于热门推荐等最小数量的queue的处理-->加入到召回结果集
+            if (CollectionUtils.isNotEmpty(hotLessQueue)) {
+                suggestSolrBeans.addAll(hotLessQueue);
+                suggestSolrBeans = suggestSolrBeans.stream().sorted().collect(Collectors.toList());
+                if (CollectionUtils.isNotEmpty(itemInfoSet)) {
+                    for (SuggestSolrBean vo : hotLessQueue) {
+                        itemInfoSet.remove(SuggestItemUtil.createItemInfo(vo));
+                    }
+                }
+            }
+        }
+        //遍历其余的召回结果，一共15条数据返回
+        for (SuggestSolrBean suggestSolrBean : suggestSolrBeans) {
+            String itemInfo = SuggestItemUtil.createItemInfo(suggestSolrBean);
+            if (itemInfoSet.contains(itemInfo) || suggestSolrBean.equals(destinationSolrBean)) {
+                continue;
+            }
+
+            suggestSolrBeanResult.add(suggestSolrBean);
+            itemInfoSet.add(itemInfo);
+            if (suggestSolrBeanResult.size() + childGroupSize >= StaticConstants.RETRIEVE_MAX_NUM) {
+                break;
+            }
+        }
+
+        return suggestSolrBeanResult;
+    }
+```
+
+
+
+```java
+//获取热门信息分组列表，以及少于热门推荐等最小数量的列表
+private Map<String, Queue<SuggestSolrBean>> getChildGroupLessQueue(CitySceneResult citySceneResult) {
+        Map<String, Queue<SuggestSolrBean>> retMap = Maps.newHashMap();
+        Queue<SuggestSolrBean> hotLessQueue = Lists.newLinkedList();
+        Queue<SuggestSolrBean> childGroups = Lists.newLinkedList();
+        SuggestSolrBean viewSpotSuggestSolrBean = citySceneResult.getViewSpotSuggestSolrBean();
+        SuggestSolrBean landmarkSuggestSolrBean = citySceneResult.getLandmarkSuggestSolrBean();
+        SuggestSolrBean houseTypeSuggestionBean = citySceneResult.getHouseTypeSuggestionBean();
+        if (viewSpotSuggestSolrBean != null) {
+            if (viewSpotSuggestSolrBean.getChildGroups().size() >= StaticConstants.RETRIEVE_HOT_MIN_NUM) {
+                childGroups.add(viewSpotSuggestSolrBean);
+            } else {
+                hotLessQueue.addAll(viewSpotSuggestSolrBean.getChildGroups());
+            }
+        }
+        if (landmarkSuggestSolrBean != null) {
+            if (landmarkSuggestSolrBean.getChildGroups().size() >= StaticConstants.RETRIEVE_HOT_MIN_NUM) {
+                childGroups.add(landmarkSuggestSolrBean);
+            } else {
+                hotLessQueue.addAll(landmarkSuggestSolrBean.getChildGroups());
+            }
+        }
+        if (houseTypeSuggestionBean != null) {
+            if (houseTypeSuggestionBean.getChildGroups().size() >= StaticConstants.RETRIEVE_HOT_MIN_NUM) {
+                childGroups.add(houseTypeSuggestionBean);
+            } else {
+                hotLessQueue.addAll(houseTypeSuggestionBean.getChildGroups());
+            }
+        }
+        retMap.put(CHILD_GROUP_QUEUE, childGroups);
+        retMap.put(HOT_LESS_QUEUE, hotLessQueue);
+        return retMap;
+    }
+```
+
