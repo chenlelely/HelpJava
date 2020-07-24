@@ -71,9 +71,7 @@ private Map<String, String> additionalData;
 
 http://wiki.corp.tujia.com/confluence/pages/viewpage.action?pageId=29800441
 
-```java
 
-```
 
 
 
@@ -146,6 +144,12 @@ public class SuggestionContext {
 
 > 构造方法：![1595489291208](C:\Users\lelec_1.TUJIA\AppData\Roaming\Typora\typora-user-images\1595489291208.png)
 
+```
+
+```
+
+
+
 ### 是否使用新的展示类型
 
 Apollo中配置：？？
@@ -185,6 +189,8 @@ public void adjust(SuggestionContext context) {
 
 ### 意图识别
 
+> **设置queryBean的各种属性**
+
 ```
 intentExtractService.extract(context);
 ```
@@ -200,7 +206,7 @@ public void extract(SuggestionContext context) {
         Integer cityId = context.getOriginPara().getCityId();
         String cityName = context.getOriginPara().getCityName();
         //噪声处理后的query内容
-        String adjustQuery = queryBean.getAdjustQry();
+        String adjustQuery = queryBean.getAdjustQry();//王府井做饭沐浴上海
         DestinationInfo destinationInfo = null;
  
 ```
@@ -257,14 +263,14 @@ public void extract(SuggestionContext context) {
                 if (cityLocationInfo != null) {
                     DestinationInfo qDestinationInfo = solrDestinationService
                         .findByDestName(cityLocationInfo.getName());
-                    if (qDestinationInfo == null) {
+                    if (qDestinationInfo == null) {//DestinationInfo:{cityId=23,cityName=上海,latitude=31.236447,longitude=121.4802}
                         return;
                     }
                     // queryBean.setQCity(cityLocationInfo.getName());
-                    //设置城市名字/id/shortCity？？？？？？
-                    queryBean.createQDestinationIfAbsent().setCity(word);
-                    queryBean.createQDestinationIfAbsent().setCityId(qDestinationInfo.getCityId());
-                    queryBean.createQDestinationIfAbsent().setShortCity(cityLocationInfo.getName());
+                    //设置城市名字/id/shortCity？？-->QueryDestination(province=null, shortProvince=null, city=上海, cityId=23, shortCity=上海, subCity=null, shortSubCity=null)
+                    queryBean.createQDestinationIfAbsent().setCity(word);//上海
+                    queryBean.createQDestinationIfAbsent().setCityId(qDestinationInfo.getCityId());//23
+                    queryBean.createQDestinationIfAbsent().setShortCity(cityLocationInfo.getName());//上海
                     cityNameSet.add(word);
                 } else if (!Strings.isChineseSearch(word)) {
                     //处理solr中有的城市，在file中没有并解决搜索拼音进入不了城市场景
@@ -281,10 +287,10 @@ public void extract(SuggestionContext context) {
                 }
             });
 
-            // 用户输入为城市时且为一框逻辑时，重写query
+            // 用户输入为城市时且为一框逻辑时，重写query-->(王府井,上海,做饭,沐浴)
             Set<String> queryWordSet = new HashSet<>(queryWords);
-            //移除已经筛选过的城市名
-            queryWordSet.removeAll(cityNameSet);
+            //移除已经筛选过的城市名(这个城市名保存在QueryDestination了)
+            queryWordSet.removeAll(cityNameSet);//-->(王府井,做饭,沐浴)
             //如果是一框&&都已经筛选过，设置查询词adjustqry
             if (CollectionUtils.isEmpty(queryWordSet) && queryBean.getPositionType() == PositionTypeEnum.ONE) {
                 queryBean.setAdjustQry(queryBean.createQDestinationIfAbsent().getShortCity());
@@ -292,8 +298,8 @@ public void extract(SuggestionContext context) {
 
             // 如果没有获取到城市信息，则从分词结果中找乡镇名对应城市
             if (StringUtils.isBlank(queryBean.getQCity())) {
-                queryWords.forEach(word -> {
-                    if (chinaSubCity.get(word) != null) {
+                queryWords.forEach(word -> {//   queryWords.size=4
+                    if (chinaSubCity.get(word) != null) {//子城市
                         // queryBean.setQCity(chinaSubCity.get(word));
                         queryBean.createQDestinationIfAbsent().setSubCity(word);
                         queryBean.createQDestinationIfAbsent().setShortSubCity(word);
@@ -352,19 +358,19 @@ public void extract(SuggestionContext context) {
         Map<String, String> feaTagRestQMap = getFeatureTagsRestQry(context);
 // 提取结果保存至queryBean中
         if (feaTagRestQMap != null) {
-            String jsonStr = feaTagRestQMap.get("tagList");
+            String jsonStr = feaTagRestQMap.get("tagList");//[{"featureTagName":"能做饭的{city}民宿","featureTagValue":301,"featureTagOldValue":null,"featureTagOldConditionType":null,"featureTagOldConditionTypeName":null,"valid":true,"alias":["可做饭","做饭","厨房","能做饭的{city}民宿"],"type":3,"typeName":null,"code":1,"webapiValid":true}]
             List<FeatureTag> featureTagList = JsonUtils.readValue(jsonStr, new TypeReference<List<FeatureTag>>() {
             });
             queryBean.setFeatureTagList(featureTagList);
 
-            String jsonNameStr = feaTagRestQMap.get("tagNameList");
+            String jsonNameStr = feaTagRestQMap.get("tagNameList");//["做饭方便"]
             List<String> tags = JsonUtils.readValue(jsonNameStr, new TypeReference<List<String>>() {
             });
             queryBean.setTags(tags);
 
             // 用户输入除去特色后的内容
             String restQry = feaTagRestQMap.get("restQry");
-            String restQryNoFilter = context.getQueryBean().getAdjustQryNoFilter();
+            String restQryNoFilter = context.getQueryBean().getAdjustQryNoFilter();//王府井沐浴上海
             // 剩余内容不能为目的地
             if (StringUtils.isNotBlank(restQry) && getCity(restQry) == null && getCity(restQryNoFilter) == null) {
                 queryBean.setAdjustQry(restQry);
@@ -668,6 +674,65 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
     }
 ```
 
+##### 意图识别后的querybean属性
+
+````java
+public class QueryBean {
+    private SuggestionParameter originPara;
+    /** query经过trim/噪声等处理，以及经意图识别后的内容 */
+    private String adjustQry;//昌平做饭浴缸三居北京
+    /** query经过trim/噪声等处理，以及经意图识别后除去筛选项后的剩余内容 */
+    private String adjustQryNoFilter;//昌平北京
+    /** query经过trim/噪声等处理，未经意图识别后的内容 */
+    private String adjustQryUnext;//昌平做饭浴缸三居北京
+    private String adjustQryPy;
+    private String adjustQryUnextPy;
+    private String adjustQryNoFilterPy;
+
+    /** adjustQry分词结果 */
+    private List<String> queryWords;// size = 5
+    private Map<String, Double> queryTermIDF;
+    private Map<String, Double> queryTermIDFWeight;
+
+    private List<String> queryWordsPy;
+
+    /** 意图识别信息 */
+    private String bCity;
+    private String qCity;
+    private Integer qCityId;
+    private String province;
+    /** 二框中用户可能想切换的城市 */
+    private String intentCity;
+    /** query中包含的各级目的地 */
+    private QueryDestination qDestination;//QueryDestination(province=null, shortProvince=null, city=北京, cityId=48, shortCity=北京, subCity=昌平, shortSubCity=昌平)
+    /** 去除了用户输入中的省份城市信息 */
+    private QueryAnalysisInfo rmIntentDestQryInfo;
+    private QrySceneEnum scene;
+    /** 仅记录根据用户输入匹配到featureTag的标准名 */
+    private List<String> tags;
+    /** 记录featureTag信息 */
+    private List<FeatureTag> featureTagList;
+    /** 用户输入只包含城市或特色 */
+    private boolean qryOnlyCityTags;
+
+    private SuggestionContext suggestionContext;
+    Map<String, Double> queryStringWeight;
+
+    /** 0-不分框 1-分框:1框 2-分框：2框 */
+    private PositionTypeEnum positionType = PositionTypeEnum.NONE;
+
+    private InternalOverseasEnum internalOverseas;
+
+    /**
+     * 若为本站渠道，判断版本号是否>=206，用于后续对本站高版本的功能进行控制
+     */
+    private boolean tujiaVersionOver206 = false;
+````
+
+
+
+
+
 ### 重新分词adjustQuery
 
 ```java
@@ -686,7 +751,7 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
             }
             context.getQueryBean().setAdjustQryPy(adjustQryPy);
 
-            List<String> wordsPy = PinyinSegment.getPinyinSegmentNoWhiteSpaces(adjustQryPy);
+            List<String> wordsPy = PinyinSegment.getPinyinSegmentNoWhiteSpaces(adjustQryPy);// {wang,fu,jing,zuo,fan,....}
             context.getQueryBean().setQueryWordsPy(wordsPy);
 
             // idf处理
@@ -699,7 +764,7 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
 ```java
 //如果用户输入中包含了省份、城市信息;剩余信息如果有，要加入分词集中进行solr查询
         if (context.getQueryBean().hasQDestination()) {
-            String rmIntentDestQry = context.getQueryBean().rmIntentCityProvinceQry();
+            String rmIntentDestQry = context.getQueryBean().rmIntentCityProvinceQry();//昌平做饭浴缸三居(移除了北京)
             if (StringUtils.isNotBlank(rmIntentDestQry) && !StringUtils.equalsIgnoreCase(rmIntentDestQry, adjustQry)) {
                 QueryAnalysisInfo rmIntentAnalysisInfo = new QueryAnalysisInfo();
                 rmIntentAnalysisInfo.setAdjustQry(rmIntentDestQry);
@@ -715,7 +780,7 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
                 rmIntentAnalysisInfo.setAdjustQryPy(adjustQryPy);
 
                 List<String> wordsPy = PinyinSegment.getPinyinSegmentNoWhiteSpaces(adjustQryPy);
-                rmIntentAnalysisInfo.setQueryWordsPy(wordsPy);
+                rmIntentAnalysisInfo.setQueryWordsPy(wordsPy);//QueryAnalysisInfo(adjustQry=昌平做饭浴缸三居, adjustQryPy=changpingzuofanyugangsanju, queryWords=[昌平, 做饭, 浴缸, 三居], queryWordsPy=[chang, ping, zuo, fan, yu, gang, san, ju])
                 context.getQueryBean().setRmIntentDestQryInfo(rmIntentAnalysisInfo);
             }
         }
@@ -760,6 +825,8 @@ public Queue<SuggestSolrBean> recallAndConverge(SuggestionContext context) {
 
 ![1595499420697](C:\Users\lelec_1.TUJIA\AppData\Roaming\Typora\typora-user-images\1595499420697.png)
 
+##### 国内国外城市
+
 ```java
  private Queue<SuggestSolrBean> citySceneRecall(SuggestionContext context, boolean oversea) {
         Queue<SuggestSolrBean> suggestSolrBeanResult = Lists.newLinkedList();
@@ -786,7 +853,7 @@ public Queue<SuggestSolrBean> recallAndConverge(SuggestionContext context) {
         Set<String> itemInfoSet = Sets.newHashSet();
         if (first.isPresent()) {
             destinationSolrBean = first.get();
-            //获取热门信息分组列表，以及少于热门推荐等最小数量的列表
+            //获取guessULike热门信息分组列表，以及少于热门推荐等最小数量的列表
             Map<String, Queue<SuggestSolrBean>> retMap = getChildGroupLessQueue(citySceneResult);
             Queue<SuggestSolrBean> childGroups = retMap.get(CHILD_GROUP_QUEUE);
             Queue<SuggestSolrBean> hotLessQueue = retMap.get(HOT_LESS_QUEUE);
@@ -865,3 +932,293 @@ private Map<String, Queue<SuggestSolrBean>> getChildGroupLessQueue(CitySceneResu
     }
 ```
 
+##### 省份或国家
+
+```java
+    private Queue<SuggestSolrBean> provinceOrCountry(SuggestionContext context) {
+        Queue<SuggestSolrBean> resultList = Lists.newLinkedList();
+        Set<String> itemInfoSet = Sets.newHashSet();
+        QueryBean queryBean = context.getQueryBean();
+        String adjustQry = queryBean.getAdjustQry();
+        QrySceneEnum scene = queryBean.getScene();
+        String q = "exactFields:" + adjustQry;
+        String suffix;
+        if (scene.equals(QrySceneEnum.Province)) {
+            suffix = "_province";
+        } else {
+            suffix = "_country";
+        }
+        q = q + suffix;
+        List<SuggestSolrBean> prefixResultList = solrRetrieveComponent.retrieveProvinceOrCountry(q, context);
+        defaultRankComponent.weightPrehandle(prefixResultList, context);
+        prefixResultList = prefixResultList.stream().sorted().collect(Collectors.toList());
+        // 目的地下热门地标
+        SuggestSolrBean firstBean = null;
+        int childGroupSize = 0;
+        if (CollectionUtils.isNotEmpty(prefixResultList)
+                && (firstBean = prefixResultList.get(0)).getConditionType() == ConditionTypeEnum.DESTINATION) {
+            //获取第一个为目的地的城市id
+            int cityId = firstBean.getCityId();
+            //提取出城市id相同的所有的 结果集
+            List<SuggestSolrBean> firstCityBeanList = prefixResultList.stream().filter(vo -> vo.getCityId() == cityId)
+                    .collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(firstCityBeanList)) {
+                boolean oversea = false;
+                if (firstBean.getInternalOverseas() == InternalOverseasEnum.Overseas.getCode()) {
+                    oversea = true;
+                }
+                //
+                CitySceneResult citySceneResult = guessULike.citySceneHandle(context, oversea, firstCityBeanList, firstBean);
+                Map<String, Queue<SuggestSolrBean>> retMap = getChildGroupLessQueue(citySceneResult);
+                Queue<SuggestSolrBean> childGroups = retMap.get(CHILD_GROUP_QUEUE);
+                Queue<SuggestSolrBean> hotLessQueue = retMap.get(HOT_LESS_QUEUE);
+                if (childGroups != null && childGroups.size() > 0) {
+                    childGroupSize = childGroups.size();
+                    //目的地下所有的推荐结果集
+                    firstBean.setChildGroups(childGroups);
+                    itemInfoSet = Sets.newHashSet(citySceneResult.getItemInfoSet());
+                }
+                String itemInfo = SuggestItemUtil.createItemInfo(firstBean);
+                itemInfoSet.add(itemInfo);
+                //返回结果中添加  目的地（包括子景点）
+                resultList.add(firstBean);
+
+                // 对少于热门推荐等最小数量的queue的处理
+                if (CollectionUtils.isNotEmpty(hotLessQueue)) {
+                    prefixResultList.addAll(hotLessQueue);
+                    prefixResultList = prefixResultList.stream().sorted().collect(Collectors.toList());
+                    if (CollectionUtils.isNotEmpty(itemInfoSet)) {
+                        for (SuggestSolrBean vo : hotLessQueue) {
+                            itemInfoSet.remove(SuggestItemUtil.createItemInfo(vo));
+                        }
+                    }
+                }
+            }
+        }
+        // 其余目的地、地标类数据处理
+        for (SuggestSolrBean suggestSolrBean : prefixResultList) {
+            if (resultList.size() >= StaticConstants.RETRIEVE_MAX_NUM) {
+                break;
+            }
+            String itemInfo = SuggestItemUtil.createItemInfo(suggestSolrBean);
+            if (itemInfoSet.contains(itemInfo)) {
+                continue;
+            }
+            resultList.add(suggestSolrBean);
+            itemInfoSet.add(itemInfo);
+        }
+
+        if (resultList.size() + childGroupSize >= StaticConstants.RETRIEVE_MAX_NUM) {
+            return resultList;
+        }
+
+        List<SuggestSolrBean> suggestSolrBeanList = solrRetrieveComponent.retrievePrefixResult(queryBean, context);
+        defaultRankComponent.weightPrehandle(suggestSolrBeanList, context);
+        suggestSolrBeanList = suggestSolrBeanList.stream().sorted().collect(Collectors.toList());
+        for (SuggestSolrBean suggestSolrBean : suggestSolrBeanList) {
+            if (resultList.size() + childGroupSize >= StaticConstants.RETRIEVE_MAX_NUM) {
+                break;
+            }
+            String itemInfo = SuggestItemUtil.createItemInfo(suggestSolrBean);
+            if (itemInfoSet.contains(itemInfo)) {
+                continue;
+            }
+            resultList.add(suggestSolrBean);
+            itemInfoSet.add(itemInfo);
+        }
+
+        return resultList;
+    }
+```
+
+#### PositionOneRecallStrategy
+
+> 一框召回策略
+
+##### 中文前缀+中文全文
+
+```java
+ //中文前缀+中文全文
+        if (Strings.isChineseSearch(trimAdjustQry) || Strings.isChineseSearch(trimAdjustQry.substring(trimAdjustQry.length()-1))) {
+            List<Future<List<SuggestSolrBean>>> rmIntentDestFutureList = null;
+            //1.如果有目的地信息
+            if (hasQDestination && rmIntentDestQryInfo != null) {
+                //异步执行前缀召回和全文召回
+                rmIntentDestFutureList = removeIntentDestRetrieve(context, rmIntentDestQryInfo, false);
+            }
+            //执行中文前缀召回
+            RetrieveResultSummary chPreRetrieveSummary = chineseRetrieve(SearchTypeEnum.PRE_MATCH, context,
+                    context.getQueryBean().getQCityId(), false, 50,
+                    true,
+                    false);
+            Map<String, SuggestSolrBean> chPreRetrieveMap = chPreRetrieveSummary.getAllResults();
+            //合并两次召回结果，添加到了chPreRetrieveMap中
+            getFutureResult(rmIntentDestFutureList, chPreRetrieveMap);
+            // 若到前缀召回处理后的时间过长，或者结果集数量多，则直接将结果返回，避免后续加入全文召回导致前端、中间层等等待超时
+            boolean isPreMatchCostMuch = context.isRetrieveCostMuch();
+            if (chPreRetrieveSummary.requireCountFullfilled() || isPreMatchCostMuch) {
+                if (isPreMatchCostMuch) {
+                    long timecost = System.currentTimeMillis() - startTime;
+                    TMonitor.recordOne(TMonitorConstants.successOf(TMonitorConstants.PRE_MATCH_COST_MUCH), timecost);
+                    log.info("一框中文前缀匹配 {} with timecost:{}ms", TMonitorConstants.PRE_MATCH_COST_MUCH, timecost);
+                }
+                //结果排序
+                return getRankComponent().chnFullText(new ArrayList<>(chPreRetrieveMap.values()), context);
+            }
+            //不超时，进行全文召回
+            RetrieveResultSummary chFullRetrieveSummary = chineseRetrieve(SearchTypeEnum.ALL_MATCH, context,
+                    context.getQueryBean().getQCityId(), false, 50,
+                    true,
+                    false);
+            chPreRetrieveMap.putAll(chFullRetrieveSummary.getAllResults());
+            List<SuggestSolrBean> unionCollection = new ArrayList<>(chPreRetrieveMap.values());
+            return getRankComponent().chnFullText(unionCollection, context);
+        }
+```
+
+##### 拼音前缀+拼音全文
+
+```java
+
+```
+
+##### 中文、拼音混合，采取中文全文+拼音全文
+
+```java
+
+```
+
+####  CustomizedSceneRecallStrategy 
+
+> 二框搜索"民宿",定制化召回策略
+
+##### 根据单一筛选项召回城市
+
+
+
+
+
+##### 修改权重
+
+```java
+Map<Integer, FeatureTag> keyFeatureTagMap = suggestionConfig.getKeyFeatureTagMap(wrapperId);
+            if (keyFeatureTagMap != null && !keyFeatureTagMap.isEmpty()) {
+                // 加权：指定排序规则加权、原始权重
+                for (SuggestSolrBean solrBean : suggestSolrBeanList) {
+                    FeatureTag tag = keyFeatureTagMap.get(Integer.parseInt(solrBean.getValue()));
+                    if (tag != null) {
+                        solrBean.addScore(ScoreRankTypeEnum.POINTED_SORT_SCORE,
+                                FeatureTagTypeEnum.getCustomScoreByType(tag.getType()), 1.0);
+                    }
+                    solrBean.addScore(ScoreRankTypeEnum.ORIGIN_WEIGHT, solrBean.getOriWeight(), 0.3);
+                }
+            } else {
+                // 加权：原始权重
+                suggestSolrBeanList.forEach(
+                        solrBean -> solrBean.addScore(ScoreRankTypeEnum.ORIGIN_WEIGHT, solrBean.getOriWeight(), 0.3));
+            }
+```
+
+
+
+####  FilterRecallStrategy
+
+>  二框用户输入含有特色且有多个特色且不只有特色 
+>
+> 复合筛选项（特色）召回场景实现类
+>
+> 格式：【地标+特色1+特色2】
+
+```java
+
+```
+
+ [suggest.pdf](C:\Users\lelec_1.TUJIA\Desktop\suggest.pdf) 
+
+<img src="D:\Typora\HelpJava\file.assets\1595574360236.png" alt="1595574360236" style="zoom: 200%;" />
+
+
+
+##### 组装地标相关的bean
+
+```java
+private void buildWithRelateCondition(SuggestSolrBean solrBean, List<FeatureTag> featureTagList, List<String> tagList,
+                                          SuggestionContext context) {
+        String originName = solrBean.getName();
+        int originSecondConditionCode = solrBean.getSecondConditionType().getCode();
+        String originValue = solrBean.getValue();
+        String historyShowName = "";
+        // C国内：1人-16人+；一室-八室及以上
+        boolean isNotCtripMainland = !(
+                StringUtils.equalsIgnoreCase(context.getOriginPara().getRebuildWrapperId(), EnumWrapperId.WAP_CTRIPBNB.getDesc())
+                        && context.getQueryBean().getInternalOverseas() == InternalOverseasEnum.Internal);
+        for (String filter : tagList) {
+            if (isNotCtripMainland) {
+                // 除C国内以外的四居及以上、10人+，需要特殊处理
+                if (StringUtils.equalsIgnoreCase(filter, String.valueOf(EnumSearchHouseModel.Four.getDesc()))) {
+                    filter += StaticConstants.FOUR_RESIDENCE_SUFFIX;
+                } else if (StringUtils.equalsIgnoreCase(filter, String.valueOf(EnumOccupantType.Ten.getDesc()))) {
+                    filter += StaticConstants.TEN_PEOPLE_SUFFIX;
+                }
+            }
+
+            historyShowName += (StaticConstants.PLUS + filter);
+        }
+        //城市+特色+特色
+        historyShowName = originName + historyShowName;
+
+        String landmarkConditionValue;
+        if (solrBean.getSecondConditionType() == SecondConditionTypeEnum.LANDMARK) {
+            landmarkConditionValue = originSecondConditionCode + StaticConstants.UNDERLINE + solrBean.getLongitude()
+                    + StaticConstants.COMMA + solrBean.getLatitude();
+        } else {
+            landmarkConditionValue = originSecondConditionCode + StaticConstants.UNDERLINE + originValue;
+        }
+
+        // 添加特色
+        solrBean.setStdName(historyShowName);
+        solrBean.setName(historyShowName);
+        solrBean.setShowName(historyShowName);
+        solrBean.setCityId(solrBean.getCityId());
+        solrBean.setCity(solrBean.getCity());
+        solrBean.setValue(String.valueOf(featureTagList.get(0).getFeatureTagValue()));
+        solrBean.setConditionType(ConditionTypeEnum.FILTER);
+        // SecondConditionType置为UNDEFINED
+        solrBean.setSecondConditionType(SecondConditionTypeEnum.UNDEFINED);
+        solrBean.setHistoryShowName(historyShowName);
+
+        List<FilterCombineCondition> singleCondition = Lists.newArrayList();
+        // 地标
+        FilterCombineCondition relateCondition = FilterCombineCondition.builder().conditionDesc(originName)
+                .enumSuggestionConditionType(ConditionTypeEnum.LOCATION.getCode())
+                .suggestionConditionValue(landmarkConditionValue).build();
+        singleCondition.add(relateCondition);
+        // 添加其余特色
+        for (int i = 1; i < featureTagList.size(); i++) {
+            FilterCombineCondition relateConditionRest = FilterCombineCondition.builder()
+                    .conditionDesc(featureTagList.get(i).getFeatureTagName())
+                    .enumSuggestionConditionType(ConditionTypeEnum.FILTER.getCode())
+                    .suggestionConditionValue(String.valueOf(featureTagList.get(i).getFeatureTagValue())).build();
+            singleCondition.add(relateConditionRest);
+        }
+        solrBean.setCombineConditions(singleCondition);
+        // 命中特色场景得分
+        solrBean.addScore(ScoreRankTypeEnum.HIT_FILTER_SCORE, 1.0, 0.5);
+//        solrBean.addScore(ScoreRankTypeEnum.ORIGIN_WEIGHT, 1.0, 0.3);
+    }
+}
+```
+
+#### PositionTwoRecallStrategy
+
+同defaultRankComponent
+
+### 数据聚合
+
+> 默认聚合组件
+>
+> http://wiki.corp.tujia.com/confluence/pages/viewpage.action?pageId=16584239
+
+```java
+class DefaultDataConvergeComponent implements DataConvergeComponent{}
+```
