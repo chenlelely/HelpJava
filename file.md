@@ -178,7 +178,7 @@ public void adjust(SuggestionContext context) {
 | PuncReplaceFilter     | 清除特殊符号，包括标点字符、符号（比如数学符号、货币符号等）、分隔符（比如空格、换行等） |
 | TraditionalFilter     | 繁体字转换                                                   |
 | UselessSuffixFilter   | 无意义后缀，包括附近、周边、周围、租房                       |
-| DestinationTrimFilter | 获取用户输入的城市或省份                                     |
+| DestinationTrimFilter | 获取用户输入的城市或省份，保存至AdjustQry属性                |
 | QueryLengthFilter     | 用户输入长度控制，中文及混拼最长50，全为拼音最长150，超过则截取前面内容 |
 
 ### 分词
@@ -260,7 +260,7 @@ public void extract(SuggestionContext context) {
             queryWords.forEach(word -> {
                 //这里可以筛选出城市名，过滤掉无意义的分词
                 CityLocationInfo cityLocationInfo = LoadCityProvinceData.getCity(word);
-                if (cityLocationInfo != null) {
+                if (cityLocationInfo != null) {//如果文件中可以得到城市信息
                     DestinationInfo qDestinationInfo = solrDestinationService
                         .findByDestName(cityLocationInfo.getName());
                     if (qDestinationInfo == null) {//DestinationInfo:{cityId=23,cityName=上海,latitude=31.236447,longitude=121.4802}
@@ -272,7 +272,7 @@ public void extract(SuggestionContext context) {
                     queryBean.createQDestinationIfAbsent().setCityId(qDestinationInfo.getCityId());//23
                     queryBean.createQDestinationIfAbsent().setShortCity(cityLocationInfo.getName());//上海
                     cityNameSet.add(word);
-                } else if (!Strings.isChineseSearch(word)) {
+                } else if (!Strings.isChineseSearch(word)) {//文件中没有获取到
                     //处理solr中有的城市，在file中没有并解决搜索拼音进入不了城市场景
                     DestinationInfo qDestinationInfo = solrDestinationService.findByDestName(word);
                     if (qDestinationInfo == null) {
@@ -291,12 +291,12 @@ public void extract(SuggestionContext context) {
             Set<String> queryWordSet = new HashSet<>(queryWords);
             //移除已经筛选过的城市名(这个城市名保存在QueryDestination了)
             queryWordSet.removeAll(cityNameSet);//-->(王府井,做饭,沐浴)
-            //如果是一框&&都已经筛选过，设置查询词adjustqry
+            //如果是一框&&都已经筛选过，设置查询词adjustqry为cityName
             if (CollectionUtils.isEmpty(queryWordSet) && queryBean.getPositionType() == PositionTypeEnum.ONE) {
                 queryBean.setAdjustQry(queryBean.createQDestinationIfAbsent().getShortCity());
             }
 
-            // 如果没有获取到城市信息，则从分词结果中找乡镇名对应城市
+            // 如果没有获取到城市信息，则从分词结果找对应城市的  简称（去掉市，县，区字符）
             if (StringUtils.isBlank(queryBean.getQCity())) {
                 queryWords.forEach(word -> {//   queryWords.size=4
                     if (chinaSubCity.get(word) != null) {//子城市
@@ -311,7 +311,7 @@ public void extract(SuggestionContext context) {
                 });
             }
         }
-        //至此可以获取到城市信息
+        //至此可以获取到  城市简称
         String cityInQuery = queryBean.createQDestinationIfAbsent().getShortCity();
 
         // 从坐标查位置城市
@@ -328,16 +328,19 @@ public void extract(SuggestionContext context) {
 ```java
  // 获取省份信息
         queryWords.forEach(word -> {
+          //ProvinceLocationInfo：[{该省份的城市列表}，省份名]==>国外、国内、拼音省份名   
             ProvinceLocationInfo provinceLocationInfo = LoadCityProvinceData.getProvince(word);
-            // 从分词结果找省份
+            
+             // 分词就是省份，直接获取
             if (provinceLocationInfo != null && !queryBean.hasQDestinationProvince()) {
-                queryBean.setProvince(provinceLocationInfo.getName());
+                queryBean.setProvince(provinceLocationInfo.getName());//省名简称
                 queryBean.createQDestinationIfAbsent().setProvince(word);
                 queryBean.createQDestinationIfAbsent().setShortProvince(provinceLocationInfo.getName());
 
-                // Qcity对应省份
+               // 否则根据城市获取省份
             } else if (StringUtils.isNotBlank(queryBean.getQCity())) {
                 String qCity = queryBean.getQCity();
+              //chinaCity可以根据城市得到省份名
                 if (chinaCity.get(qCity) != null && StringUtils.isNotBlank(chinaCity.get(qCity).getProvince())) {
                     queryBean.setProvince(chinaCity.get(qCity).getProvince());
                 } else if (pyChinaCity.get(qCity) != null
@@ -370,7 +373,7 @@ public void extract(SuggestionContext context) {
 
             // 用户输入除去特色后的内容
             String restQry = feaTagRestQMap.get("restQry");
-            String restQryNoFilter = context.getQueryBean().getAdjustQryNoFilter();//王府井沐浴上海
+            String restQryNoFilter = context.getQueryBean().getAdjustQryNoFilter();//王府井上海
             // 剩余内容不能为目的地
             if (StringUtils.isNotBlank(restQry) && getCity(restQry) == null && getCity(restQryNoFilter) == null) {
                 queryBean.setAdjustQry(restQry);
@@ -385,13 +388,13 @@ public void extract(SuggestionContext context) {
 
 ```java
 private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
-        String initQry = context.getQueryBean().getAdjustQry();
+        String initQry = context.getQueryBean().getAdjustQry();//还没有去除
         String wrapperId = context.getOriginPara().getRebuildWrapperId();
-        context.getQueryBean().setAdjustQryUnext(initQry);
         // 初始化
+        context.getQueryBean().setAdjustQryUnext(initQry);
         context.getQueryBean().setAdjustQryNoFilter(initQry);
-        if (!Strings.isChineseSearch(initQry)) {
-            List<String> pinYinList = PinYinHandler.getPinyinList(initQry);
+        if (!Strings.isChineseSearch(initQry)) {//输入的是中文
+            List<String> pinYinList = PinYinHandler.getPinyinList(initQry);//获取拼音
             if (CollectionUtils.isNotEmpty(pinYinList)) {
                 context.getQueryBean().setAdjustQryUnextPy(pinYinList.get(0));
                 context.getQueryBean().setAdjustQryNoFilterPy(pinYinList.get(0));
@@ -403,12 +406,11 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
         String restQry = initQry;
         List<String> queryWords = context.getQueryBean().getQueryWords();
         // Apollo中的featureTag列表
-        Map<String, FeatureTag> featureTagMap;
+        Map<String, FeatureTag> featureTagMap;//{可做饭，{可做饭，做饭方便}}？？？
         Map<String, FeatureTag> pyFeatureTagMap;
         SuggestionConfig suggestionConfig = suggestionConfigCache.getSearchControlConfig();
-        // 筛选项标准名映射
+        // 筛选项标准名映射（不同渠道）
         Map<Integer, String> featureTagNameMap = suggestionConfig.getFeatureTagNameMap();
-        //这里通过wrapperId获取不同渠道的的特色列表
         if (StringUtils.equalsIgnoreCase(wrapperId, EnumWrapperId.WAPTUJIA016.getDesc())) {
             featureTagMap = suggestionConfig.getQunarFeatureTagMap();
             pyFeatureTagMap = suggestionConfig.getPyQunarFeatureTagMap();
@@ -422,29 +424,29 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
             featureTagMap = suggestionConfig.getTujiaFeatureTagMap();
             pyFeatureTagMap = suggestionConfig.getPyTujiaFeatureTagMap();
         }
-        // 不关心queryWordsPy是否为空；没有特色
+        // 不关心queryWordsPy是否为空
         if (CollectionUtils.isEmpty(queryWords) || featureTagMap.isEmpty() || pyFeatureTagMap.isEmpty()) {
             return null;
         }
-        // 用户输入内容中的特色集合
+        // 保存用户输入内容中的特色集合
         List<FeatureTag> tagList = Lists.newArrayList();
         List<String> tagNameList = Lists.newArrayList();
         // 特色去重
-        Set<String> tagSet = Sets.newHashSet();
+        Set<String> tagSet = Sets.newHashSet();//保存标准标签名
         FeatureTag tag;
         String stdTagName;
-        // 1.特色提取-从分词结果中提取
-        restQry = restQry.toLowerCase();
+        // 1.特色提取-分词处理
+        restQry = restQry.toLowerCase();//提取一个特色标签就去掉一个
         for (String word : queryWords) {
             word = word.toLowerCase();
             if (featureTagMap.containsKey(word)) {
                 tag = featureTagMap.get(word);
-                stdTagName = featureTagNameMap.get(tag.getFeatureTagValue());
+                stdTagName = featureTagNameMap.get(tag.getFeatureTagValue());//标准标签名字
 
-                // 非Ctrip（携程）四居筛选项特殊识别处理
+                // 非Ctrip四居筛选项特殊识别处理
                 if (!EnumWrapperId.WAP_CTRIPBNB.getDesc().equalsIgnoreCase(wrapperId)
                         && tag.getFeatureTagValue() == EnumSearchHouseModel.Four.getLabelKey()) {
-                    // 若用户输入为五-八居，则改为四居
+                    // 若为五-八居，则改为四居
                     // NOTE 需要修改用户输入，在下面还有回写的操作
                     restQry = restQry.replaceAll(word, StaticConstants.FOUR_RESIDENCE);
                     initQry = initQry.replaceAll(word, StaticConstants.FOUR_RESIDENCE);
@@ -455,7 +457,7 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
                     tagNameList.add(stdTagName);
                 }
                 tagSet.add(stdTagName);
-                restQry = restQry.replaceFirst(word, "");
+                restQry = restQry.replaceFirst(word, "");//去除该标签
             }
         }
 
@@ -492,7 +494,7 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
             }
         }
         // 保存除去筛选项后的剩余内容
-        context.getQueryBean().setAdjustQryNoFilter(restQry);
+        context.getQueryBean().setAdjustQryNoFilter(restQry);//去除了标签的restQry
         if (StringUtils.isNotBlank(context.getQueryBean().getAdjustQryNoFilterPy())) {
             List<String> pinYinList = PinYinHandler.getPinyinList(restQry);
             if (CollectionUtils.isNotEmpty(pinYinList)) {
@@ -511,12 +513,12 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
                 || qryLen >= StaticConstants.QUERY_MIX_LEN_MAX) {
             isQueryTooLong = true;
         }
-        // 剩余内容过短，对召回及排序影响比较大，易丢失关键信息，不删除提取出的筛选项内容
+        // 剩余内容过短，对召回及排序影响比较大，易丢失关键信息，不删除提取出的筛选项内容；太长也不删除？？？
         if (StringUtils.length(restQry) <= 2 || isQueryTooLong) {
             restQry = initQry;
         }
 
-        // NOTE 用户输入在提取特色前后对比，主要是非Ctrip渠道关于户型的处理，需要覆盖原用户输入
+        // NOTE 用户输入在提取特色前后对比，主要是非Ctrip渠道关于户型的处理，需要覆盖原用户输入（只是处理渠道五居以上替换为四居）
         if (!StringUtils.equalsIgnoreCase(initQry, initQryBak)) {
             log.info("origin user input is {}, but {} instead now", initQryBak, initQry);
             context.getQueryBean().setAdjustQry(initQry);
@@ -537,12 +539,12 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
 ```java
  // 根据分词结果判断
         // 用户输入命中省级单位且结尾为省或区，且输入到市级，如“湖北省武汉”
-        if (StringUtils.isNotBlank(queryBean.createQDestinationIfAbsent().getProvince())
+       if (StringUtils.isNotBlank(queryBean.createQDestinationIfAbsent().getProvince())
                 && (queryBean.createQDestinationIfAbsent().getProvince().endsWith("省")
                 || queryBean.createQDestinationIfAbsent().getProvince().endsWith("区"))
                 && StringUtils.isNotBlank(queryBean.createQDestinationIfAbsent().getCity())) {
             queryBean.setIntentCity(cityInQuery);
-            // 如果与QCity一致，则对query重写
+            // 如果与QCity一致，则对query重写，去除query中的省份和城市
             String originAdjustQry = queryBean.getAdjustQry();
             String remProvince = originAdjustQry.replaceAll(queryBean.createQDestinationIfAbsent().getProvince(), "");
             String remProvinceAndCity = remProvince.replaceAll(queryBean.createQDestinationIfAbsent().getCity(), "");
@@ -550,12 +552,12 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
                 if (StringUtils.isBlank(remProvinceAndCity)) {
                     queryBean.setAdjustQry(queryBean.getQDestination().getShortCity());
                 } else if (StringUtils.equalsIgnoreCase(cityInQuery,
-                        queryBean.getQCity())) {
-                    queryBean.setAdjustQry(remProvinceAndCity);
+                        queryBean.getQCity())) {//query去除省份城市后还有内容，而且城市信息已经获取到
+                    queryBean.setAdjustQry(remProvinceAndCity);//query就只保存剩余信息
                 }
             } else if (positionType == PositionTypeEnum.ONE) {
-                if (StringUtils.isBlank(remProvinceAndCity)) {
-                    queryBean.setAdjustQry(queryBean.getQDestination().getShortCity());
+                if (StringUtils.isBlank(remProvinceAndCity)) {//是一框，而且query去除省份城市后没有有内容
+                    queryBean.setAdjustQry(queryBean.getQDestination().getShortCity());//query就保存城市名
                 }
             }
         }
@@ -590,7 +592,7 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
             if (positionType == PositionTypeEnum.TWO && StringUtils.isNotBlank(remCity)) {
                 if (StringUtils.equalsIgnoreCase(cityInQuery,
                         queryBean.getQCity())) {
-                    queryBean.setAdjustQry(remCity);
+                    queryBean.setAdjustQry(remCity);//AdjustQry需要被设置为剩余的区县信息
                 }
             }
         }
@@ -680,7 +682,7 @@ private Map<String, String> getFeatureTagsRestQry(SuggestionContext context) {
 public class QueryBean {
     private SuggestionParameter originPara;
     /** query经过trim/噪声等处理，以及经意图识别后的内容 */
-    private String adjustQry;//昌平做饭浴缸三居北京
+    private String adjustQry;//昌平做饭浴缸三居北京？？？？
     /** query经过trim/噪声等处理，以及经意图识别后除去筛选项后的剩余内容 */
     private String adjustQryNoFilter;//昌平北京
     /** query经过trim/噪声等处理，未经意图识别后的内容 */
@@ -767,7 +769,7 @@ public class QueryBean {
             String rmIntentDestQry = context.getQueryBean().rmIntentCityProvinceQry();//昌平做饭浴缸三居(移除了北京)
             if (StringUtils.isNotBlank(rmIntentDestQry) && !StringUtils.equalsIgnoreCase(rmIntentDestQry, adjustQry)) {
                 QueryAnalysisInfo rmIntentAnalysisInfo = new QueryAnalysisInfo();
-                rmIntentAnalysisInfo.setAdjustQry(rmIntentDestQry);
+                rmIntentAnalysisInfo.setAdjustQry(rmIntentDestQry);//只有最小的目的地和其他信息
                 List<String> words = tokenizerService.tokenize(rmIntentDestQry);
                 rmIntentAnalysisInfo.setQueryWords(words);
 
