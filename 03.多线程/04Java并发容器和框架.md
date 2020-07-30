@@ -295,6 +295,7 @@ CopyOnWriteArrayList 中迭代器的弱一致性是怎么回事 ， 所谓弱一
 
 CopyOnWriteArrayList 使用**写时复制的策略**来保证 list 的一致性，而**获取一修改一写入**三步操作并不是原子性的，所以在增删改的过程中都使用了独占锁，来保证在某个时间只有一个线程能对 list 数组进行修改 。 另外 CopyOnWriteAn·ayList 提供了弱 一致性的迭代器 ， 从而保证在获取迭代器后，其他线程对 list 的修改是不可见的， 迭代器遍历的数组是一个快照 。 另外， CopyOnWriteArraySet 的底层就是使用它实现的
 ## 4.5 并发容器之ThreadLocal
+https://www.cnblogs.com/gonjan-blog/p/6507072.html
 https://juejin.im/post/5aeeb22e6fb9a07aa213404a
 ### set（T value）
 set方法设置在当前线程中threadLocal变量的值，该方法的源码为：
