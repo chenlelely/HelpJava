@@ -335,6 +335,127 @@ Default 生命周期是 Maven 生命周期中最重要的一个，绝大部分�
 
 ![image-20200601091315922](Maven使用.assets/image-20200601091315922.png)
 
+### 8.profiles
+
+#### 1pom配置
+
+ 在开发过程中，我们的项目会存在不同的运行环境，比如开发环境、测试环境、生产环境，而我们的项目在不同的环境中，有的配置可能会不一样，比如数据源配置、日志文件配置、以及一些软件运行过程中的基本配置 
+
+```xml
+ <profiles>
+        <profile>
+            <!--不同环境Profile的唯一id-->
+            <id>dev</id>
+            <properties>
+                <!--profiles.active是自定义的字段（名字随便起），自定义字段可以有多个-->
+                <profiles.active>dev</profiles.active>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <properties>
+                <profiles.active>prod</profiles.active>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>test</id>
+            <properties>
+                <profiles.active>test</profiles.active>
+            </properties>
+        </profile>
+    </profiles>
+```
+
+ 可以看到定义了多个profile，每个profile都有**唯一的id**，也包含**properties属性**。这里为每个profile都定义一个名为`profiles.active`的properties，每个环境的值不同。当我们打包项目时，激活不同的环境，profiles.active字段就会被赋予不同的值。
+
+#### **2结合resource属性**
+
+<img src="C:\Users\lelec_1.TUJIA\AppData\Roaming\Typora\typora-user-images\1595471417337.png" alt="1595471417337" style="zoom:50%;" />       
+
+这个profiles.active字段可以应用到许多地方，及其灵活。可以在配置文件里被引用；也可以结合pom文件里的resource和filter属性，作为文件名的一部分或者文件夹名的一部分
+
+这里定义了dev，prod，test三个文件夹，用来演示maven中profile的使用。注意，每个文件夹里还定义了`application-{xxx}.properties`件，这里相当于结合springboot的Profile的使用，是我比较推荐的方式，和本文maven的profile使用无关系，在`application.properties`都有`spring.profiles.active=xxx`去加载对应的application-{xxx}.properties。
+
+#### 3激活
+
+1. 通过pom文件里的`activation`属性，pom文件里的关键配置为：
+
+```xml
+ <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>true</executable>
+                </configuration>
+            </plugin>
+        </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <!--打包时先排除掉三个文件夹-->
+                <excludes>
+                    <exclude>dev/*</exclude>
+                    <exclude>prod/*</exclude>
+                    <exclude>test/*</exclude>
+                </excludes>
+                <includes>
+                    <!--如果有其他定义通用文件，需要包含进来-->
+                    <!--<include>messages/*</include>-->
+                </includes>
+            </resource>
+            <resource>
+                <!--这里是关键！ 根据不同的环境，把对应文件夹里的配置文件打包-->
+                <directory>src/main/resources/${profiles.active}</directory>
+            </resource>
+        </resources>
+    </build>
+
+    <profiles>
+        <profile>
+            <!--不同环境Profile的唯一id-->
+            <id>dev</id>
+            <properties>
+                <!--profiles.active是自定义的字段，自定义字段可以有多个-->
+                <profiles.active>dev</profiles.active>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <properties>
+                <profiles.active>prod</profiles.active>
+            </properties>
+            <!--activation用来指定激活方式，可以根据jdk环境，环境变量，文件的存在或缺失-->
+            <activation>
+                <!--这个字段表示默认激活-->
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>test</id>
+            <properties>
+                <profiles.active>test</profiles.active>
+            </properties>
+        </profile>
+    </profiles>
+```
+
+2. `mvn clean package -Ptest`
+
+ 即在使用maven打包时通过-P参数，-P后跟上profile的唯一id 
+
 ## 继承  
 
 由于非 compile 范围的依赖信息是不能在“依赖链”中传递的， 所以有需要的工程只能单独配置，可能版本号不一致出现问题。  
@@ -417,5 +538,12 @@ Default 生命周期是 Maven 生命周期中最重要的一个，绝大部分�
 </modules>
 ```
 
+
+
+
+
+
+
 ## Maven 酷站
+
 我们可以到 http://mvnrepository.com/搜索需要的 jar 包的依赖信息。  

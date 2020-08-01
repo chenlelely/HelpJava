@@ -99,9 +99,9 @@ Rebase 实际上就是取出一系列的提交记录，“复制”它们，然�
 
 `git rebase master`:把当前分支（`HEAD`指向）中的工作复制到master分支上，移动后**两个分支上的工作看起来像是顺序提交的**，并且**当前分支的工作在master分支的最顶端**。
 
-然后需要更新master分支：`git checkout master`;
+然后需要**更新master分支**：`git checkout master`;
 
-**让master指向最顶端：**`git rebase bugFix`
+并**让master指向最顶端：**`git rebase bugFix`
 
 <img src="00Git基础.assets/image-20200515115935082.png" alt="image-20200515115935082" style="zoom: 67%;" />
 
@@ -134,7 +134,7 @@ HEAD 通常情况下是指向分支名的（如 bugFix）。在你提交时，�
 
 ----
 
-#### `git branch -f <分支名> <版本号>`强制修改分支位置
+#### `git branch -f <分支名>/<版本号>`强制修改分支位置
 
 我使用相对引用最多的就是移动分支。可以直接使用 `-f` 选项让分支指向另一个提交。例如:
 
@@ -218,7 +218,7 @@ HEAD 通常情况下是指向分支名的（如 bugFix）。在你提交时，�
 
 `git push -u origin master`
 
-刷新GitHub，即可看到GitHub仓库中出现提交的文件
+origin是远程仓库名，可以更改。刷新GitHub，即可看到GitHub仓库中出现提交的文件
 
 ----
 
