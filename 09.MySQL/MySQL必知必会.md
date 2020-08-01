@@ -118,7 +118,7 @@ JSON是一种轻量级的数据交换格式。相比格式化JSON以字符串形
 
 `show columns from city;`显示city表中的表列；它对每个字段返回一行，行中包含字段名、数据类型、是否允许NULL、键信息、默认值以及其他信息
 
-- ·`DESCRIBE`语句：MySQL支持用DESCRIBE作为·`SHOW COLUMNS FROM`的一种快捷方式。换句话说，`DESCRIBE customers；`是`SHOW COLUMNS FROM customers；`的一种快捷方式。
+- `DESCRIBE`语句：MySQL支持用DESCRIBE作为·`SHOW COLUMNS FROM`的一种快捷方式。换句话说，`DESCRIBE customers；`是`SHOW COLUMNS FROM customers；`的一种快捷方式。
 
 所支持的其他SHOW语句还有：
 

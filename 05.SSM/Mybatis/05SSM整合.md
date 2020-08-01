@@ -34,7 +34,7 @@ https://github.com/mybatis/jpetstore-6
           <artifactId>slf4j-log4j12</artifactId>
           <version>1.7.21</version>
       </dependency>
-    <!--JavaEE-->
+    <!--   servlet JSP-->
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
@@ -129,13 +129,13 @@ https://github.com/mybatis/jpetstore-6
       <artifactId>jackson-databind</artifactId>
       <version>2.9.4</version>
     </dependency>
+    
+    <!--数据库   连接池druid-->
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>${mysql.version}</version>
     </dependency>
-    <!--druid-->
-    <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
     <dependency>
       <groupId>com.alibaba</groupId>
       <artifactId>druid</artifactId>
@@ -236,6 +236,7 @@ https://github.com/mybatis/jpetstore-6
         </plugin>
       </plugins>
     </pluginManagement>
+    <!--maven资源过滤设置-->
     <resources>
       <resource>
         <directory>src/main/java</directory>
@@ -258,34 +259,19 @@ https://github.com/mybatis/jpetstore-6
 
 
 
+## Mybatis层编写
 
+### 1. 编写数据库配置文件
 
-### mapper映射文件
+`dbconfig.properties`
 
-conf/mybatis/mapper
+### 2. 编写数据库对应的实体类
 
-```xml
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
- PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
- "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.atguigu.mybatis.dao.EmployeeMapper">
+`com.guigu.bean`
 
-	<!-- public Employee getEmpById(Integer id); -->
-	<select id="getEmpById" resultType="com.atguigu.mybatis.bean.Employee">
-		select * from tbl_employee where id=#{id}
-	</select>
-	
-	<!--public List<Employee> getEmps();  -->
-	<select id="getEmps" resultType="com.atguigu.mybatis.bean.Employee">
-		select * from tbl_employee
-	</select>
-</mapper>
-```
+### 3. mybatis-config全局配置文件
 
-### mybatis全局配置文件
-
-conf/mybatis-config.xml
+`conf/mybatis-config.xml`
 
 只需要配置设置属性，其他的在applicationContext.xml中配置
 
@@ -310,20 +296,136 @@ conf/mybatis-config.xml
 		<property name="Oracle" value="oracle"/>
 		<property name="SQL Server" value="sqlserver"/>
 	</databaseIdProvider>
-	
+  
+  <typeAliases><!--批量别名定义,指定包名，mybatis自动扫描包中的bean类，自动定义别名，别名是类名-->
+       <package name="com.guigu.bean"/><!--别名用在mapper.xml的SQL parameterType中-->
+   </typeAliases>
+    
+  <!-- 在applicationContext.xml中配置了
+	<mappers>
+       <mapper resource="com/kuang/dao/BookMapper.xml"/>
+   </mappers>
+	-->
 </configuration>
 ```
 
-### web.xml
+### 4. 编写Dao层的Mapper接口
+
+`com.guigu.dao.EmployeeMapper`
+
+对应增删改查
+
+### 5. mapper.xml映射文件
+
+`resources/mapper`
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd"><!--把全局配置文件中的config替换为mapper即可-->
+<mapper namespace="com.atguigu.dao.EmployeeMapper">
+
+	<!-- public Employee getEmpById(Integer id); -->
+	<select id="getEmpById" resultType="Employee"><!--使用了别名-->
+		select * from tbl_employee where id=#{id}
+	</select>
+	
+	<!--public List<Employee> getEmps();  -->
+	<select id="getEmps" resultType="Employee">
+		select * from tbl_employee
+	</select>
+</mapper>
+```
+
+### 6. 编写Service层的接口和实现类
+
+## Spring层的编写
+
+### 1. applicationContext.xml整合dao和service
+
+- 整合service层`spring-service.xml`
+- 整合Mybatis`spring-dao.xml`
+
+`resources/applicationContext.xml`
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" id="WebApp_ID" version="2.5">
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<!-- 整合service层 ，Spring希望管理所有的业务逻辑组件，等。。。 -->
+	<context:component-scan base-package="com.atguigu">
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+
+  <!-- 整合配置Mybatis -->
+	<!--   1. 引入数据库的配置文件 -->
+	<context:property-placeholder location="classpath:dbconfig.properties" />
+	<!--   2. 数据库连接池 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+		<property name="url" value="${jdbc.url}"></property>
+		<property name="driverClassName" value="${jdbc.driver}"></property>
+		<property name="username" value="${jdbc.username}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+	<!--   3. spring事务管理 -->
+	<bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	             <!-- 开启基于注解的事务 -->
+	<tx:annotation-driven transaction-manager="dataSourceTransactionManager"/>
+	
+	<!--   4. 创建出SqlSessionFactory对象  -->
+	<bean id="sqlSessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 注入数据库连接池 -->
+        <property name="dataSource" ref="dataSource"></property>
+		<!-- configLocation指定全局配置文件的位置 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml"></property>
+		<!--mapperLocations: 指定mapper文件的位置-->
+		<property name="mapperLocations" value="classpath:mapper/*.xml"></property>
+	</bean>
+	
+	<!--   5. 配置一个可以进行批量执行的sqlSession  -->
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg name="sqlSessionFactory" ref="sqlSessionFactoryBean"></constructor-arg>
+		<constructor-arg name="executorType" value="BATCH"></constructor-arg>
+	</bean>
+	
+	<!--    6. 扫描所有的mapper接口的实现，让这些mapper能够自动注入；	
+				base-package：指定mapper接口的包名-->
+	<mybatis-spring:scan base-package="com.atguigu.mybatis.dao"/>
+	<!-- <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.atguigu.mybatis.dao"></property>
+	</bean> -->
+	
+</beans>
+
+```
+
+## SpringMVC层编写
+
+### 1. web.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xmlns="http://java.sun.com/xml/ns/javaee" 
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+                             http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" id="WebApp_ID" version="2.5">
   <display-name>MyBatis_06_ssm</display-name>
   
   <!--Spring配置： needed for ContextLoaderListener -->
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
+    	<!--总配置文件-->
 		<param-value>classpath:applicationContext.xml</param-value>
 	</context-param>
 
@@ -345,85 +447,28 @@ conf/mybatis-config.xml
 		<servlet-name>spring</servlet-name>
 		<url-pattern>/</url-pattern>
 	</servlet-mapping>
+  <!--encodingFilter-->
+   <filter>
+       <filter-name>encodingFilter</filter-name>
+       <filter-class>
+          org.springframework.web.filter.CharacterEncodingFilter
+       </filter-class>
+       <init-param>
+           <param-name>encoding</param-name>
+           <param-value>utf-8</param-value>
+       </init-param>
+   </filter>
+   <filter-mapping>
+       <filter-name>encodingFilter</filter-name>
+       <url-pattern>/*</url-pattern>
+   </filter-mapping>
   
 </web-app>
 ```
 
-### applicationContext.xml
+### 2. spring-servlet.xml
 
-conf/applicationContext.xml
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
-	xmlns:tx="http://www.springframework.org/schema/tx"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-		http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
-		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
-		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
-
-	<!-- Spring希望管理所有的业务逻辑组件，等。。。 -->
-	<context:component-scan base-package="com.atguigu.mybatis">
-		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
-	</context:component-scan>
-
-	<!-- 引入数据库的配置文件 -->
-	<context:property-placeholder location="classpath:dbconfig.properties" />
-	<!-- Spring用来控制业务逻辑。数据源、事务控制、aop -->
-	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
-		<property name="jdbcUrl" value="${jdbc.url}"></property>
-		<property name="driverClass" value="${jdbc.driver}"></property>
-		<property name="user" value="${jdbc.username}"></property>
-		<property name="password" value="${jdbc.password}"></property>
-	</bean>
-	<!-- spring事务管理 -->
-	<bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
-		<property name="dataSource" ref="dataSource"></property>
-	</bean>
-
-	<!-- 开启基于注解的事务 -->
-	<tx:annotation-driven transaction-manager="dataSourceTransactionManager"/>
-	
-	<!-- 
-	整合mybatis 
-		目的：1、spring管理所有组件。mapper的实现类。
-				service==>Dao   @Autowired:自动注入mapper；
-			2、spring用来管理事务，spring声明式事务
-	-->
-	<!--创建出SqlSessionFactory对象  -->
-	<bean id="sqlSessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
-		<property name="dataSource" ref="dataSource"></property>
-		<!-- configLocation指定全局配置文件的位置 -->
-		<property name="configLocation" value="classpath:mybatis-config.xml"></property>
-		<!--mapperLocations: 指定mapper文件的位置-->
-		<property name="mapperLocations" value="classpath:mybatis/mapper/*.xml"></property>
-	</bean>
-	
-	<!--配置一个可以进行批量执行的sqlSession  -->
-	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
-		<constructor-arg name="sqlSessionFactory" ref="sqlSessionFactoryBean"></constructor-arg>
-		<constructor-arg name="executorType" value="BATCH"></constructor-arg>
-	</bean>
-	
-	<!-- 扫描所有的mapper接口的实现，让这些mapper能够自动注入；	base-package：指定mapper接口的包名
-	 -->
-	<mybatis-spring:scan base-package="com.atguigu.mybatis.dao"/>
-	<!-- <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-		<property name="basePackage" value="com.atguigu.mybatis.dao"></property>
-	</bean> -->
-	
-</beans>
-
-```
-
-
-
-### spring-servlet.xml
-
-WEB-INF/spring-servlet.xml
+`WEB-INF/spring-servlet.xml`
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -436,15 +481,17 @@ WEB-INF/spring-servlet.xml
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
 
 	<!--SpringMVC只是控制网站跳转逻辑  -->
-	<!-- 只扫描控制器 -->
+  <!-- 1. 只扫描控制器层bean -->
 	<context:component-scan base-package="com.guigu.controller" use-default-filters="false">
         <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
     </context:component-scan>
     <context:annotation-config/>
+  <!-- 2. 开启SpringMVC注解驱动 -->
     <mvc:annotation-driven/>
+  <!-- 3. 静态资源默认servlet配置-->
     <mvc:default-servlet-handler/>
-    <!-- 视图解析器 -->
-     <!--    模板解析器-->
+  <!-- 4. 视图解析器 -->
+    	 <!--    模板解析器-->
     <bean id="templateResolver"
           class="org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver">
         <property name="prefix" value="/WEB-INF/pages/" />
@@ -452,13 +499,13 @@ WEB-INF/spring-servlet.xml
         <property name="templateMode" value="HTML" />
         <property name="cacheable" value="true" />
     </bean>
-<!--    模板引擎-->
+		<!--    模板引擎-->
     <bean id="templateEngine"
           class="org.thymeleaf.spring4.SpringTemplateEngine">
         <property name="templateResolver" ref="templateResolver" />
         <property name="enableSpringELCompiler" value="true" />
     </bean>
-<!--    視圖解析器-->
+		<!--    視圖解析器-->
     <bean class="org.thymeleaf.spring4.view.ThymeleafViewResolver">
         <property name="templateEngine" ref="templateEngine" />
         <property name="order" value="1" />
@@ -473,9 +520,9 @@ WEB-INF/spring-servlet.xml
 
 ```
 
+### 3. controller层编写
 
-
-
+### 4. 前端页面编写
 
 
 

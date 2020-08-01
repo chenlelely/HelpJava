@@ -39,8 +39,8 @@ Java内存模型规定所有的变量都存储在主内存（Main Memory中（�
 ### volatile
 当一个变量定义为volatile之后，它将具备两种特性：
 
-- 第一是保证此变量对所有线程的可见性，这里的“可见性”是指当一条线程修改了这个变量的值，新值对于其他线程来说是可以立即得知的。
-- 第二是禁止指令重排序
+- 第一是保证此变量对所有线程的**可见性**，这里的“可见性”是指当一条线程修改了这个变量的值，新值对于其他线程来说是可以立即得知的。
+- 第二是**禁止指令重排序**
 
 **volatile实现原理：**
 使用Violatile修饰的变量在汇编阶段，会多出一条**lock前缀指令**，它在多核处理器下回引发两件事情：
@@ -69,7 +69,7 @@ Java内存模型规定所有的变量都存储在主内存（Main Memory中（�
 
 java 并发包中有一些并发框架也使用了**自旋CAS的方式来实现原子操作**
 
-### 可见性（Visibility)：
+### 可见性（Visibility)
 可见性是指当一个线程修改了共享变量的值，其他线程能够立即得知这个修改。上文在讲解 volatile变量的时候我们已详细讨论过这一点。Java内存模型是通过在变量修改后将新值同步回主内存，在变量读取前从主内存刷新变量值这种依赖主内存作为传递媒介的方式来实现可见性的，无论是普通变量还是volatile变量都是如此，普通变量与volatile变量的区别是，volatile的特殊规则保证了新值能立即同步到主内存，以及每次使用前立即从主内存刷新。因此，可以说volatile保证了多线程操作时变量的可见性，而普通变量则不能保证这一点。
 
 **除了volatile之外，Java还有两个关键字能实现可见性，即synchronized和final**。
@@ -155,7 +155,7 @@ Java语言提供了**volatile和synchronized**两个关键字来保证线程之�
 
 经典Web交互模型中的“一个请求对应一个服务器线程”（Thread-per-Request)的处理方式，这种处理方式的广泛应用使得很多Web服务端应用都可以使用线程本地存储来解决线程安全
 
-Java.lang.ThreadLocal类来实现线程本地存储的功能。每一个线程的Thread对象中都有一个ThreadLocalMap对象，这个对象存储了一组以ThreadLocal.threadLocalHashCode为键，以本地线程变量为值的K-V值对，ThreadLocal对象就是当前线程的ThreadLocalMap的访问入口，每一个ThreadLocal对象都包含了一个独一无二的threadLocalllashCode值，使用这个值就可以在线程K-V值对中找回对应的本地线程变量。
+Java.lang.ThreadLocal类来实现线程本地存储的功能。每一个线程的Thread对象中都有一个ThreadLocalMap对象，这个对象存储了一组以`ThreadLocal.threadLocalHashCode`为键，以`本地线程变量`为值的K-V值对，ThreadLocal对象就是当前线程的ThreadLocalMap的访问入口，每一个ThreadLocal对象都包含了一个独一无二的threadLocalllashCode值，使用这个值就可以在线程K-V值对中找回对应的本地线程变量。
 # 13.2锁优化
 ### 自旋锁
 

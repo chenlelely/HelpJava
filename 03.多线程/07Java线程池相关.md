@@ -109,11 +109,11 @@ Executor框架的主要成员：**ThreadPoolExecutor、ScheduledThreadPoolExecut
    2. LinkedBlockingQueue ： 基于链表的无界阻塞队列 ，FIFO ，吞吐量高于ArrayBlockingQueue， Executors.newFixedThreadPoll()使用了这个队列
    3. SynchronousQueue： 一个只存储一个元素的阻塞队列， 每个插入操作必须等到另一个线程调用移除操作， 否则插入一直处于阻塞状态， 吞吐量高于 LinkedBlockingQueue，Executors#newCachedThreadPoll()使用了这个队列
    4. PriorityBlockingQueue： 具有优先级的无界阻塞队列  
-7. RejectedExecutionHandler（饱和策略）
-   1. AbortPolicy：丢弃并抛出异常。
-   2. CallerRunsPolicy：在任务提交者线程中执行任务，而不是交给线程池中的线程执行。
-   3. DiscardOldestPolicy：将队列中等待时间最长的任务丢掉，并执行当前任务。
-   4. DiscardPolicy：丢弃不抛异常
+7. RejectedExecutionHandler（==饱和策略==）
+   1. ==AbortPolicy：丢弃并抛出异常==。
+   2. ==CallerRunsPolicy：在任务提交者线程中执行任务，而不是交给线程池中的线程执行==。
+   3. ==DiscardOldestPolicy：将队列中等待时间最长的任务丢掉，并执行当前任务==。
+   4. ==DiscardPolicy：丢弃不抛异常==
 
 注意：
 
