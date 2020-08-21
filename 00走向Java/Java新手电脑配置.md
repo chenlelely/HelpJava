@@ -277,6 +277,9 @@ ctrl + shift + t
 https://www.runoob.com/maven/maven-setup.html
 
 # 5. 版本控制系统git
+镜像下载
+https://npm.taobao.org/mirrors/git-for-windows/
+https://github.com/waylau/git-for-win
 
 https://www.runoob.com/git/git-install-setup.html
 
