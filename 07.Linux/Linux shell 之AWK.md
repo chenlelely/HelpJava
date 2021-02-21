@@ -80,33 +80,37 @@ awk [-F|-f|-v] 'BEGIN{} /pattern/ {command1; command2} END{}' file
 
 分隔符默认为空格，` \t`是制表符，一个或多个连续的空格或制表符看做一个定界符，即多个空格看做一个空格
 
-`awk -F":" '{print $1}'  /etc/passwd`
+```bash
+awk -F":" '{print $1}'  /etc/passwd
 
-`awk -F":" '{print $1 $3}'  /etc/passwd `           //$1与$3相连输出，不分隔
+awk -F":" '{print $1 $3}'  /etc/passwd           //$1与$3相连输出，不分隔
 
-`awk -F":" '{print $1,$3}'  /etc/passwd `           //多了一个逗号，$1与$3使用空格分隔
+awk -F":" '{print $1,$3}'  /etc/passwd           //多了一个逗号，$1与$3使用空格分隔
 
-`awk -F":" '{print $1 " " $3}'  /etc/passwd `         //$1与$3之间手动添加空格分隔
+awk -F":" '{print $1 " " $3}'  /etc/passwd         //$1与$3之间手动添加空格分隔
 
-`awk -F":" '{print "Username:" $1 "\t\t Uid:" $3 }' /etc/passwd`    //自定义输出  
+awk -F":" '{print "Username:" $1 "\t\t Uid:" $3 }' /etc/passwd    //自定义输出  
 
-`awk -F: '{print NF}' /etc/passwd  `               //显示每行有多少字段
+awk -F: '{print NF}' /etc/passwd               #显示每行有多少字段
 
-`awk -F: '{print $NF}' /etc/passwd `               //==将每行第NF个字段的值打印出来==
+awk -F: '{print $NF}' /etc/passwd               #将每行第NF个字段的值打印出来
 
-` awk -F: 'NF==4 {print }' /etc/passwd `            //==显示只有4个字段的行==
+awk -F: 'NF==4 {print }' /etc/passwd            //==显示只有4个字段的行==
 
-`awk -F: 'NF>2{print $0}' /etc/passwd `           //显示每行字段数量大于2的行
+awk -F: 'NF>2{print $0}' /etc/passwd           //显示每行字段数量大于2的行
 
-`awk '{print NR,$0}' /etc/passwd  `                //==输出每行的行号==
+awk '{print NR,$0}' /etc/passwd                //==输出每行的行号==
 
-`awk -F: '{print NR,NF,$NF,"\t",$0}' /etc/passwd `   //==依次打印行号，字段数，最后字段值，制表符，每行内容==
+awk -F: '{print NR,NF,$NF,"\t",$0}' /etc/passwd   //==依次打印行号，字段数，最后字段值，制表符，每行内容==
 
-`awk -F: 'NR==5{print}' /etc/passwd `             //==显示第5行==
+awk -F: 'NR==5{print}' /etc/passwd             //==显示第5行==
 
-`awk -F: 'NR==5 || NR==6{print}'  /etc/passwd`    //==显示第5行和第6行==
+awk -F: 'NR==5 || NR==6{print}'  /etc/passwd    //==显示第5行和第6行==
 
-`route -n|awk 'NR!=1{print}'`                    //==不显示第一行==
+route -n|awk 'NR!=1{print}'                    //==不显示第一行==
+```
+
+
 
 
 
@@ -136,25 +140,29 @@ END{print "[end] user count is ",count}'
 >
 > `~/a1|a2/`字段值匹配a1或a2
 
-`awk '/mysql/{print $0}' /etc/passwd `         //打印含有mysql的行
+```bash
+awk '/mysql/{print $0}' /etc/passwd         //打印含有mysql的行
 
-`awk '!/mysql/{print $0}' /etc/passwd `         //打印不含有mysql的行
+awk '!/mysql/{print $0}' /etc/passwd         //打印不含有mysql的行
 
-`awk '/mysql|mail/{print}' /etc/passwd` 	//打印含有mysql或者mail的行
+awk '/mysql|mail/{print}' /etc/passwd 	//打印含有mysql或者mail的行
 
-`awk '!/mysql|mail/{print}' /etc/passwd`	//打印没有mysql或者mail的行
+awk '!/mysql|mail/{print}' /etc/passwd	//打印没有mysql或者mail的行
 
-`awk -F: '/mail/,/mysql/{print}' /etc/passwd`     //区间匹配
+awk -F: '/mail/,/mysql/{print}' /etc/passwd     //区间匹配
 
-`awk '/[2][7][7]*/{print $0}' /etc/passwd   `     //匹配包含27为数字开头的行，如27，277，2777...
+awk '/[2][7][7]*/{print $0}' /etc/passwd     //匹配包含27为数字开头的行，如27，277，2777...
 
-`awk -F: '$1~/mail/{print $1}' /etc/passwd`      //$1匹配指定内容才显示
+awk -F: '$1~/mail/{print $1}' /etc/passwd      //$1匹配指定内容才显示
 
-`awk -F: '{if($1~/mail/) print $1}' /etc/passwd`   //与上面相同
+awk -F: '{if($1~/mail/) print $1}' /etc/passwd   //与上面相同
 
-`awk -F: '$1!~/mail/{print $1}' /etc/passwd  `    //不匹配
+awk -F: '$1!~/mail/{print $1}' /etc/passwd    //不匹配
 
-`awk -F: '$1!~/mail|mysql/{print $1}' /etc/passwd  `  
+awk -F: '$1!~/mail|mysql/{print $1}' /etc/passwd  
+```
+
+
 
 
 
@@ -162,15 +170,19 @@ END{print "[end] user count is ",count}'
 
 print 是awk打印指定内容的主要命令
 
-`awk '{print}'  /etc/passwd`  ==  `awk '{print $0}'  /etc/passwd  `	打印每一行
+```bash
+awk '{print}'  /etc/passwd  ==  awk '{print $0}'  /etc/passwd	打印每一行
 
-`awk '{print "a"}'  /etc/passwd`                    //输出相同个数的a行，一行只有一个a字母
+awk '{print "a"}'  /etc/passwd                    //输出相同个数的a行，一行只有一个a字母
 
-`awk -F":" '{print $1}'  /etc/passwd `		//输出每一行被分割后的第一个字符串
+awk -F":" '{print $1}'  /etc/passwd		//输出每一行被分割后的第一个字符串
 
-`awk -F: '{print $1; print $2}'  /etc/passwd `         //以“:”为分隔符，将每一行的前二个字段，分行输出
+awk -F: '{print $1; print $2}'  /etc/passwd         //以“:”为分隔符，将每一行的前二个字段，分行输出
 
-`awk  -F: '{print $1,$3,$6}' OFS="\t" /etc/passwd`    //输出字段1,3,6，以制表符作为分隔符
+awk  -F: '{print $1,$3,$6}' OFS="\t" /etc/passwd    //输出字段1,3,6，以制表符作为分隔符
+```
+
+
 
 ### **输出分隔符OFS**
 
