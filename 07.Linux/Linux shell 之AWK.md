@@ -370,3 +370,12 @@ awk -F: '{print ($3>100 ? $3":\tyes":$3":\tno")}'  /etc/passwd
 `netstat -anp|awk 'NR!=1{a[$6]++} END{for (i in a) printf "%-20s %-10s %-5s \n", i,"\t",a[i]}'`
 
 ## 常用字符串函数
+
+## 举例
+#### 打印一段时间内的日志
+```bash
+[2020/08/24 11:21:39.725][tns-suggestion-webapi_2008241121.172.31.85.192.22457.14_0][QmJ3mWDATV4][INFO][c.t.t.s.s.i.e.DefaultExtractStrategy:identifyHotLandmark:595][http-nio-8010-exec-8] AdjustQry without tag match "[桐庐县]" in "杭州" hot landmark's List. 
+awk -F'[ :]' '$3>=16 && $3 <=17 && /match/{for(i=7;i<=NF;i++)printf("%s ",$i);print ""}' tujia_top.log
+```
+1. print 中不能使用%s ,%d 或%c；  
+2. print 自动换行，printf 没有自动换行。
