@@ -6,7 +6,7 @@
 
 1. 进入官网[Http://tomcat.apache.org/](http://tomcat.apache.org/),选择download，下载所需要的Tomcat版本。
 
-<img src="Java新手电脑配置.assets/1832356-20191016113630168-1443483862.png" alt="img" style="zoom:50%;" />
+<img src="https://i.loli.net/2020/09/06/hUOgBoGt4QKL5xm.png" alt="img" style="zoom:50%;" />
 
 ​	下载后解压即可。
 
@@ -24,11 +24,11 @@
 > https://tech.souyunku.com/?p=30970
 #### 1.设置
 
-<img src="Java新手电脑配置.assets/image-20200306222432941.png" alt="image-20200306222432941" style="zoom: 50%;" /> 
+<img src="https://i.loli.net/2020/09/06/Bxy1tqvwc3dkuzC.png" alt="image-20200306222432941" style="zoom: 50%;" /> 
 
 #### 2. 字体设置
 
-<img src="Java新手电脑配置.assets/image-20200306222701618.png" alt="image-20200306222701618"  />
+<img src="https://i.loli.net/2020/09/06/hNzTGV4Raw7ZlJ8.png" alt="image-20200306222701618"  />
 
 #### 3.关闭自动更新
 
@@ -36,26 +36,26 @@
 
 #### 自动导包
 
-![image-20200306222823935](Java新手电脑配置.assets/image-20200306222823935.png)
+![image-20200306222823935](https://i.loli.net/2020/09/06/7Jrg9sVwWhLUCkP.png)
 
 Add unambiguous imports on the fly：自动导入不明确的结构;
 Optimize imports on the fly： 自动帮我们优化导入的包
 
 #### 禁止自动打开上次的项目
 
-![image-20200306222854896](Java新手电脑配置.assets/image-20200306222854896.png)
+![image-20200306222854896](https://i.loli.net/2020/09/06/1pU2AYt76D8ejIE.png)
 
 #### 代码折叠设置
 
-![image-20200306222940849](Java新手电脑配置.assets/image-20200306222940849.png)
+![image-20200306222940849](https://i.loli.net/2020/09/06/oiJbWgnEOB7twP8.png)
 
 #### 代码风格设置
 
-![image-20200306223015591](Java新手电脑配置.assets/image-20200306223015591.png)
+![image-20200306223015591](https://i.loli.net/2020/09/06/bOA12yXjaUKHqMw.png)
 
 #### 更改文件签名
 
-![image-20200306223045797](Java新手电脑配置.assets/image-20200306223045797.png)
+![image-20200306223045797](https://i.loli.net/2020/09/06/GE7P5TqKIiws9D2.png)
 
 #### 设置主题
 
@@ -133,35 +133,6 @@ Live Templates 默认如下：
 自定义模板
 
 ![在这里插入图片描述](Java新手电脑配置.assets/20190519214857443.png)
-
-#### 插件安装
-
-![在这里插入图片描述](Java新手电脑配置.assets/20190519215400501.png)
-
-
-RainBow Brackets（彩虹括号）
-
-Maven Helper
-
-ignore：生成各种ignore文件，一键创建git ignore文件的模板。
-
-lombok：通过该插件可以生成实体的GetXXX和SetXXX方法。lombok的注解(@Setter,@Getter,@ToString,@@RequiredArgsConstructor,@EqualsAndHashCode或@Data)，需要在项目中添加依赖。
-
-FindBugs-IDEA：检测代码中可能的bug及不规范的位置。
-
-GsonFormat：根据json文本生成java类。
-
-VisualVM Launcher：运行java程序的时候启动visualvm，方便查看jvm的情况。
-
-GenerateAllSetter：一键调用一个对象的所有set方法并且赋予默认值。
-
-Grep console：自定义日志颜色，idea控制台可以彩色显示各种级别的log，安装完成后，在console中右键就能打开。
-
-Free Mybatis plugin：mybatis 插件，让你的mybatis.xml像java代码一样编辑。
-
-MyBatis Log Plugin：直接将Mybatis执行的sql脚本显示出来，可以直接运行。
-
-Restfultookit：可以根据web访问的url找到对应的controller类，还可以生成测试数据，不用postman来组装数据。
 
 #### 创建 Java Web Project 或 Module
 创建的静态 Java Web
@@ -266,7 +237,67 @@ ctrl + shift + t
 选择要粘贴的内容(Show in Explorer) ctrl+shift+v
 查找方法在哪里被调用(Call Hierarchy) ctrl+shift+h
 
+## idea插件
 
+![在这里插入图片描述](Java新手电脑配置.assets/20190519215400501.png)
+
+#### Maven Helper
+
+#### GitLab Projects 2020
+
+#### ignore
+
+生成各种ignore文件，一键创建git ignore文件的模板。
+
+#### lombok
+
+通过该插件可以生成实体的GetXXX和SetXXX方法。lombok的注解(@Setter,@Getter,@ToString,@@RequiredArgsConstructor,@EqualsAndHashCode或@Data)，需要在项目中添加依赖。
+
+#### jrebel
+
+热部署
+
+1. 服务器地址监听服务器地址：http://jrebel.cicoding.cn
+
+2. GUID生成器：http://jrebel.cicoding.cn/guid
+
+3. 监听配置格式：http://jrebel.cicoding.cn/GUID 生成的如下：`http://jrebel.cicoding.cn/4B068EB5-0941-4645-1E98-FC077D530A61 `，然后直接粘贴到jrebel激活设置栏中，然后填写一个邮箱即可
+
+#### FindBugs-IDEA
+
+检测代码中可能的bug及不规范的位置。
+
+#### Alibaba Java Coding Guidelines
+
+代码规范检查
+
+#### GsonFormat
+
+根据json文本生成java类。
+
+#### VisualVM Launcher
+
+运行java程序的时候启动visualvm，方便查看jvm的情况。
+
+#### GenerateAllSetter
+
+一键调用一个对象的所有set方法并且赋予默认值。
+
+#### Grep console
+
+自定义日志颜色，idea控制台可以彩色显示各种级别的log，安装完成后，在console中右键就能打开。
+
+#### Free Mybatis plugin
+
+mybatis 插件，让你的mybatis.xml像java代码一样编辑。
+
+#### MyBatis Log Plugin
+
+直接将Mybatis执行的sql脚本显示出来，可以直接运行。
+
+#### Restfultookit
+
+可以根据web访问的url找到对应的controller类，还可以生成测试数据，不用postman来组装数据。
 
 # 3. Postman（接口测试工具）
 
