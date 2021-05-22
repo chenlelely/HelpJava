@@ -19,7 +19,9 @@
 4. IDEA编辑器tomcat设置
 
 # 2. IDEA安装与配置
-> idea激活：http://idea.medeming.com/jets/
+> idea激活：
+> http://idea.medeming.com/jets/
+> https://tech.souyunku.com/?p=30970
 #### 1.设置
 
 <img src="Java新手电脑配置.assets/image-20200306222432941.png" alt="image-20200306222432941" style="zoom: 50%;" /> 

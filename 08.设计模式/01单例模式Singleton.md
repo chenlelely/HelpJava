@@ -102,7 +102,7 @@ class LazySingleton {
 
 > 双重检查锁定来实现懒汉式单例类，需要在静态成员变量instance之前增加修饰符 `volatile`，被volatile修饰的成员变量可以确保多个线程都能够正确处理:https://blog.csdn.net/hll174/article/details/51491414
 >
-> ```java
+> ```
 > //对于instance=new Lazysingleton()可以分解为以下三个伪代码：
 > memory = allocate();   //1：分配对象的内存空间  
 > ctorInstance(memory);  //2：初始化对象
